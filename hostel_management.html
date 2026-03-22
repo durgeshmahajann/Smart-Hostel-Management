@@ -45,7 +45,7 @@
   .pc-value.green{color:var(--accent3)} .pc-value.blue{color:var(--accent)} .pc-value.purple{color:var(--accent2)}
   #screen-auth { align-items:center; justify-content:center; background:var(--bg); position:relative; overflow:hidden; }
   #screen-auth .landing-bg, #screen-auth .grid-overlay { position:absolute; }
-  .auth-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px; width:100%; max-width:420px; box-shadow:var(--shadow); animation:fadeUp .5s ease both; }
+  .auth-box { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px; width:100%; max-width:460px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); animation:fadeUp .5s ease both; }
   .auth-box h2 { font-family:'Syne',sans-serif; font-size:26px; font-weight:700; margin-bottom:6px; }
   .auth-sub { color:var(--text2); font-size:14px; margin-bottom:28px; }
   .role-tabs { display:flex; gap:6px; margin-bottom:24px; background:var(--surface2); padding:5px; border-radius:10px; }
@@ -199,9 +199,11 @@
     <div class="logo-badge"><div class="logo-dot"></div> ResidenceOS v2.0</div>
     <h1 class="landing-title">Smart <span>Hostel</span><br>Management</h1>
     <p class="landing-sub">A unified platform for students, administrators, and maintenance teams.</p>
-    <div class="landing-actions">
+    <div class="landing-actions" style="flex-wrap:wrap;gap:10px">
       <button class="btn-primary" onclick="showAuth('login')">🔐 Sign In</button>
-      <button class="btn-secondary" onclick="showAuth('register')">✏️ Register as Student</button>
+      <button class="btn-secondary" onclick="showAuth('register-student')">🎓 Student Register</button>
+      <button class="btn-secondary" onclick="showAuth('register-admin')">⚙️ Admin Register</button>
+      <button class="btn-secondary" onclick="showAuth('register-staff')">🔧 Staff Register</button>
     </div>
     <div class="preview-cards">
       <div class="preview-card"><div class="pc-label">Total Rooms</div><div class="pc-value blue" id="lp-rooms">—</div></div>
@@ -214,7 +216,7 @@
 <!-- AUTH -->
 <div id="screen-auth" class="screen">
   <div class="landing-bg"></div><div class="grid-overlay"></div>
-  <div class="auth-box">
+  <div class="auth-box" style="max-width:460px">
     <span class="back-link" onclick="showScreen('landing')">← Back to home</span>
     <h2 id="auth-title">Welcome back</h2>
     <p class="auth-sub" id="auth-sub">Sign in to your account to continue</p>
@@ -230,8 +232,14 @@
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@university.edu" autocomplete="off"/></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/></div>
       <button class="btn-primary" id="login-btn" style="width:100%;margin-top:8px" onclick="doLogin()">Sign In →</button>
-      <div class="auth-toggle">No account? <a onclick="showAuth('register')">Register here</a></div>
-      <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text3)">
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+        <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-student')">🎓 Student Register</a>
+        <span style="color:var(--text3);font-size:12px">·</span>
+        <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-admin')">⚙️ Admin Register</a>
+        <span style="color:var(--text3);font-size:12px">·</span>
+        <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-staff')">🔧 Staff Register</a>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text3)">
         <strong style="color:var(--text2)">Demo accounts:</strong><br>
         Student: student@university.edu / student123<br>
         Admin: admin@university.edu / admin123<br>
@@ -239,20 +247,66 @@
       </div>
     </div>
 
-    <!-- REGISTER -->
-    <div id="auth-register-mode" style="display:none">
-      <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" placeholder="Your Full Name" autocomplete="off"/></div>
+    <!-- STUDENT REGISTER -->
+    <div id="auth-register-student" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 14px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:10px">
+        <span style="font-size:22px">🎓</span>
+        <div><div style="font-size:13px;font-weight:600;color:var(--accent)">Student Registration</div><div style="font-size:11px;color:var(--text3)">Create your student hostel account</div></div>
+      </div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="sreg-name" placeholder="Your Full Name" autocomplete="off"/></div>
       <div class="form-row">
-        <div class="form-group"><label>Student ID</label><input type="text" id="reg-sid" placeholder="STU-2024-001" autocomplete="off"/></div>
+        <div class="form-group"><label>Student ID</label><input type="text" id="sreg-sid" placeholder="STU-2024-001" autocomplete="off"/></div>
         <div class="form-group"><label>Department</label>
-          <select id="reg-dept"><option>Computer Science</option><option>Mechanical Engg.</option><option>Electronics</option><option>Civil Engg.</option><option>MBA</option></select>
+          <select id="sreg-dept"><option>Computer Science</option><option>Mechanical Engg.</option><option>Electronics</option><option>Civil Engg.</option><option>MBA</option></select>
         </div>
       </div>
-      <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@university.edu" autocomplete="off"/></div>
-      <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
-      <button class="btn-primary" id="reg-btn" style="width:100%;margin-top:8px" onclick="doRegister()">Create Account →</button>
-      <div class="auth-toggle">Already registered? <a onclick="showAuth('login')">Sign in</a></div>
+      <div class="form-group"><label>Email</label><input type="email" id="sreg-email" placeholder="you@university.edu" autocomplete="off"/></div>
+      <div class="form-group"><label>Password</label><input type="password" id="sreg-password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+      <button class="btn-primary" id="sreg-btn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#4f8ef7,#7c5cfc)" onclick="doRegister('student')">Create Student Account →</button>
+      <div class="auth-toggle" style="margin-top:14px">Already registered? <a onclick="showAuth('login')">Sign in</a></div>
     </div>
+
+    <!-- ADMIN REGISTER -->
+    <div id="auth-register-admin" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 14px;background:rgba(247,164,79,0.08);border:1px solid rgba(247,164,79,0.25);border-radius:10px">
+        <span style="font-size:22px">⚙️</span>
+        <div><div style="font-size:13px;font-weight:600;color:var(--warning)">Admin Registration</div><div style="font-size:11px;color:var(--text3)">Create an administrator account</div></div>
+      </div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="areg-name" placeholder="Admin Full Name" autocomplete="off"/></div>
+      <div class="form-group"><label>Email</label><input type="email" id="areg-email" placeholder="admin@university.edu" autocomplete="off"/></div>
+      <div class="form-group"><label>Admin Code <span style="font-size:11px;color:var(--text3)">(required)</span></label>
+        <input type="password" id="areg-code" placeholder="Enter admin registration code" autocomplete="off"/>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Demo code: <strong style="color:var(--warning)">ADMIN2024</strong></div>
+      </div>
+      <div class="form-group"><label>Password</label><input type="password" id="areg-password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+      <div class="form-group"><label>Confirm Password</label><input type="password" id="areg-confirm" placeholder="Re-enter password" autocomplete="new-password"/></div>
+      <button class="btn-primary" id="areg-btn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#f7a44f,#f75c5c)" onclick="doRegister('admin')">Create Admin Account →</button>
+      <div class="auth-toggle" style="margin-top:14px">Already registered? <a onclick="showAuth('login')">Sign in</a></div>
+    </div>
+
+    <!-- STAFF REGISTER -->
+    <div id="auth-register-staff" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 14px;background:rgba(34,211,165,0.08);border:1px solid rgba(34,211,165,0.25);border-radius:10px">
+        <span style="font-size:22px">🔧</span>
+        <div><div style="font-size:13px;font-weight:600;color:var(--accent3)">Staff Registration</div><div style="font-size:11px;color:var(--text3)">Create a maintenance staff account</div></div>
+      </div>
+      <div class="form-group"><label>Full Name</label><input type="text" id="mreg-name" placeholder="Staff Full Name" autocomplete="off"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Employee ID</label><input type="text" id="mreg-empid" placeholder="EMP-001" autocomplete="off"/></div>
+        <div class="form-group"><label>Specialization</label>
+          <select id="mreg-spec"><option>Electrical</option><option>Plumbing</option><option>Carpentry</option><option>AC / HVAC</option><option>General</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" id="mreg-email" placeholder="staff@university.edu" autocomplete="off"/></div>
+      <div class="form-group"><label>Staff Code <span style="font-size:11px;color:var(--text3)">(required)</span></label>
+        <input type="password" id="mreg-code" placeholder="Enter staff registration code" autocomplete="off"/>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Demo code: <strong style="color:var(--accent3)">STAFF2024</strong></div>
+      </div>
+      <div class="form-group"><label>Password</label><input type="password" id="mreg-password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+      <button class="btn-primary" id="mreg-btn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#22d3a5,#4f8ef7)" onclick="doRegister('maintenance')">Create Staff Account →</button>
+      <div class="auth-toggle" style="margin-top:14px">Already registered? <a onclick="showAuth('login')">Sign in</a></div>
+    </div>
+
   </div>
 </div>
 
@@ -591,7 +645,7 @@
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══════════════════════════════════════════════════════════════════
 //  IN-BROWSER DATABASE  (localStorage — no server needed)
 // ═══════════════════════════════════════════════════════════════════
@@ -652,14 +706,14 @@ function dbInit() {
   DB.setObj('nextComplaintId', 4);
   DB.setObj('nextComplaintNo', 43);
 
-  // Seed applications
+  // Seed applications (use high user_ids that won't clash with real registrations)
   DB.set('applications', [
-    { id:1, user_id:5, student_name:'Priya Nair',  student_id:'STU-2024-0201', student_dept:'Electronics', department:'Electronics', year_of_study:'2nd Year', room_type:'Single Room', block_pref:'Block A', requirements:'', move_in_date:'2026-04-01', status:'pending',  reviewed_by:null, created_at:'2026-03-20T10:00:00Z' },
-    { id:2, user_id:6, student_name:'Rahul Desai', student_id:'STU-2024-0199', student_dept:'Mechanical',  department:'Mechanical',  year_of_study:'3rd Year', room_type:'Double Room', block_pref:'Block B', requirements:'', move_in_date:'2026-04-01', status:'pending',  reviewed_by:null, created_at:'2026-03-19T11:00:00Z' },
-    { id:3, user_id:7, student_name:'Anita Verma', student_id:'STU-2024-0195', student_dept:'CSE',         department:'CSE',         year_of_study:'1st Year', room_type:'Single Room', block_pref:'No Preference', requirements:'', move_in_date:'2026-01-05', status:'approved', reviewed_by:1, created_at:'2026-03-18T09:00:00Z' }
+    { id:1, user_id:101, student_name:'Priya Nair',  student_id:'STU-2024-0201', student_dept:'Electronics', department:'Electronics', year_of_study:'2nd Year', room_type:'Single Room', block_pref:'Block A', requirements:'', move_in_date:'2026-04-01', status:'pending',  reviewed_by:null, created_at:'2026-03-20T10:00:00Z' },
+    { id:2, user_id:102, student_name:'Rahul Desai', student_id:'STU-2024-0199', student_dept:'Mechanical',  department:'Mechanical',  year_of_study:'3rd Year', room_type:'Double Room', block_pref:'Block B', requirements:'', move_in_date:'2026-04-01', status:'pending',  reviewed_by:null, created_at:'2026-03-19T11:00:00Z' },
+    { id:3, user_id:103, student_name:'Anita Verma', student_id:'STU-2024-0195', student_dept:'CSE',         department:'CSE',         year_of_study:'1st Year', room_type:'Single Room', block_pref:'No Preference', requirements:'', move_in_date:'2026-01-05', status:'approved', reviewed_by:1, created_at:'2026-03-18T09:00:00Z' }
   ]);
   DB.setObj('nextAppId', 4);
-  DB.setObj('seeded', true);
+  DB.setObj('nextUserId', 10);
 }
 
 // ─── DB HELPERS ──────────────────────────────────────────────────────────────
@@ -685,8 +739,9 @@ const simApi = {
     if (!body.name||!body.email||!body.password) throw 'Name, email and password are required.';
     if (body.password.length < 6) throw 'Password must be at least 6 characters.';
     if (users.find(u=>u.email===body.email)) throw 'An account with this email already exists.';
+    const role = body.role || 'student';
     const user = { id:nextId('nextUserId'), name:body.name, email:body.email, password:body.password,
-      role:'student', student_id:body.student_id||null, department:body.department||null, phone:body.phone||null };
+      role, student_id:body.student_id||null, department:body.department||null, phone:body.phone||null };
     users.push(user); DB.set('users', users);
     return { token: btoa(JSON.stringify({id:user.id,role:user.role})), user: safeUser(user) };
   },
@@ -965,11 +1020,26 @@ function showScreen(id) {
 
 function showAuth(mode) {
   showScreen('auth');
-  const isLogin = mode === 'login';
-  document.getElementById('auth-login-mode').style.display = isLogin ? 'block' : 'none';
-  document.getElementById('auth-register-mode').style.display = isLogin ? 'none' : 'block';
-  document.getElementById('auth-title').textContent = isLogin ? 'Welcome back' : 'Create Account';
+  // Hide all panels
+  ['auth-login-mode','auth-register-student','auth-register-admin','auth-register-staff']
+    .forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('auth-error').classList.remove('show');
+
+  const titles = {
+    'login':            ['Welcome back',             'Sign in to your account to continue'],
+    'register-student': ['Student Registration',     'Create your student hostel account'],
+    'register-admin':   ['Admin Registration',       'Create an administrator account'],
+    'register-staff':   ['Staff Registration',       'Create a maintenance staff account'],
+  };
+  const [title, sub] = titles[mode] || titles['login'];
+  document.getElementById('auth-title').textContent = title;
+  document.getElementById('auth-sub').textContent   = sub;
+
+  if (mode === 'login') {
+    document.getElementById('auth-login-mode').style.display = 'block';
+  } else {
+    document.getElementById('auth-register-' + mode.replace('register-','')).style.display = 'block';
+  }
 }
 
 function setRole(btn, role) {
@@ -1021,26 +1091,54 @@ async function doLogin() {
   finally { btn.disabled=false; btn.textContent='Sign In →'; loading(false); }
 }
 
-async function doRegister() {
-  const name     = document.getElementById('reg-name').value.trim();
-  const sid      = document.getElementById('reg-sid').value.trim();
-  const dept     = document.getElementById('reg-dept').value;
-  const email    = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  const errEl    = document.getElementById('auth-error');
+async function doRegister(role) {
+  const errEl = document.getElementById('auth-error');
   errEl.classList.remove('show');
-  if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.classList.add('show'); return; }
-  const btn = document.getElementById('reg-btn');
+
+  let name, email, password, extraData = {}, btnId, btnText;
+
+  if (role === 'student') {
+    name     = document.getElementById('sreg-name').value.trim();
+    email    = document.getElementById('sreg-email').value.trim();
+    password = document.getElementById('sreg-password').value;
+    extraData = { student_id: document.getElementById('sreg-sid').value.trim(), department: document.getElementById('sreg-dept').value };
+    btnId = 'sreg-btn'; btnText = 'Create Student Account →';
+    if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.classList.add('show'); return; }
+
+  } else if (role === 'admin') {
+    name     = document.getElementById('areg-name').value.trim();
+    email    = document.getElementById('areg-email').value.trim();
+    password = document.getElementById('areg-password').value;
+    const confirm  = document.getElementById('areg-confirm').value;
+    const code     = document.getElementById('areg-code').value.trim();
+    btnId = 'areg-btn'; btnText = 'Create Admin Account →';
+    if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.classList.add('show'); return; }
+    if (code !== 'ADMIN2024') { errEl.textContent='Invalid admin registration code.'; errEl.classList.add('show'); return; }
+    if (password !== confirm)  { errEl.textContent='Passwords do not match.'; errEl.classList.add('show'); return; }
+    extraData = { department: 'Administration' };
+
+  } else if (role === 'maintenance') {
+    name     = document.getElementById('mreg-name').value.trim();
+    email    = document.getElementById('mreg-email').value.trim();
+    password = document.getElementById('mreg-password').value;
+    const code = document.getElementById('mreg-code').value.trim();
+    btnId = 'mreg-btn'; btnText = 'Create Staff Account →';
+    if (!name||!email||!password) { errEl.textContent='Name, email and password are required.'; errEl.classList.add('show'); return; }
+    if (code !== 'STAFF2024') { errEl.textContent='Invalid staff registration code.'; errEl.classList.add('show'); return; }
+    extraData = { department: document.getElementById('mreg-spec').value, student_id: document.getElementById('mreg-empid').value.trim() };
+  }
+
+  const btn = document.getElementById(btnId);
   btn.disabled=true; btn.textContent='Creating...'; loading(true);
   try {
-    const data = await api('POST', '/auth/register', { name, email, password, student_id:sid, department:dept });
+    const data = await api('POST', '/auth/register', { name, email, password, role, ...extraData });
     TOKEN = data.token; CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
     showToast('✅ Account created successfully!');
     enterDashboard(CURRENT_USER);
   } catch(e) { errEl.textContent=e.message; errEl.classList.add('show'); }
-  finally { btn.disabled=false; btn.textContent='Create Account →'; loading(false); }
+  finally { btn.disabled=false; btn.textContent=btnText; loading(false); }
 }
 
 function enterDashboard(user) {
@@ -1385,14 +1483,33 @@ function priorityBadge(p) { const cls=p==='Urgent'||p==='High'?'badge-red':p==='
 function noDataRow(cols) { return `<tr><td colspan="${cols}" style="text-align:center;padding:24px;color:var(--text3)">No data found</td></tr>`; }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-document.getElementById('complaint-modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
+document.getElementById('complaint-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
 
 window.addEventListener('DOMContentLoaded', () => {
-  dbInit(); // seed localStorage on first visit
-  // Load landing stats
-  try { const d=simApi['GET /admin/dashboard'](); document.getElementById('lp-rooms').textContent=d.stats.rooms.total_rooms; document.getElementById('lp-occupied').textContent=d.stats.rooms.occupied; document.getElementById('lp-issues').textContent=d.stats.complaints.pending; } catch(e){}
-  // Auto re-login if session exists
-  if (TOKEN && CURRENT_USER) enterDashboard(CURRENT_USER);
+  // Clear stale seed from previous broken version
+  const seedVer = DB.getObj('seedVersion', 0);
+  if (seedVer < 2) { localStorage.clear(); DB.setObj('seedVersion', 2); }
+  dbInit();
+
+  // Load landing page stats
+  try {
+    const d = simApi['GET /admin/dashboard']();
+    document.getElementById('lp-rooms').textContent    = d.stats.rooms.total_rooms;
+    document.getElementById('lp-occupied').textContent = d.stats.rooms.occupied;
+    document.getElementById('lp-issues').textContent   = d.stats.complaints.pending;
+  } catch(e) {}
+
+  // Auto re-login only if a valid saved session exists
+  if (TOKEN && CURRENT_USER) {
+    const stillExists = getUsers().find(u => u.id === CURRENT_USER.id);
+    if (stillExists) {
+      enterDashboard(CURRENT_USER);
+    } else {
+      doLogout();
+    }
+  }
 });
 </script>
 </body>
