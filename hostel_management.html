@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResidenceOS — Hostel Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181b22;
+    --surface3: #1e222c;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --accent3: #22d3a5;
+    --danger: #f75c5c;
+    --warning: #f7a44f;
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6a;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.5);
+    --glow: 0 0 30px rgba(79,142,247,0.18);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen { display:none; width:100%; height:100vh; }
+  .screen.active { display:flex; }
+
+  /* ─── LANDING ─── */
+  #screen-landing {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .landing-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(79,142,247,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(124,92,252,0.1) 0%, transparent 60%);
+  }
+  .grid-overlay {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .landing-content { position: relative; text-align: center; max-width: 560px; padding: 0 24px; }
+  .logo-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    padding: 8px 18px; border-radius: 100px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--accent); margin-bottom: 32px;
+    animation: fadeDown 0.6s ease both;
+  }
+  .logo-dot { width:8px; height:8px; border-radius:50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s ease infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:none} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  .landing-title {
+    font-family: 'Syne', sans-serif; font-size: clamp(42px, 7vw, 72px);
+    font-weight: 800; line-height: 1.05; letter-spacing: -2px;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+  .landing-title span { 
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .landing-sub {
+    margin-top: 16px; font-size: 17px; color: var(--text2); line-height: 1.6;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+  .landing-actions {
+    margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    animation: fadeUp 0.7s 0.3s ease both;
+  }
+  .btn-primary {
+    padding: 13px 28px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+    border: none; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+    box-shadow: 0 4px 20px rgba(79,142,247,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(79,142,247,0.5); }
+  .btn-secondary {
+    padding: 13px 28px; border-radius: 10px;
+    background: var(--surface2); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 500; border: 1px solid var(--border2);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--surface3); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+  /* Floating cards preview */
+  .preview-cards {
+    margin-top: 56px; display: flex; gap: 12px; justify-content: center;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+  .preview-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 18px; text-align: left; min-width: 130px;
+  }
+  .preview-card .pc-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; }
+  .preview-card .pc-value { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .preview-card .pc-value.green { color: var(--accent3); }
+  .preview-card .pc-value.blue { color: var(--accent); }
+  .preview-card .pc-value.purple { color: var(--accent2); }
+
+  /* ─── AUTH ─── */
+  #screen-auth {
+    align-items: center; justify-content: center;
+    background: var(--bg);
+    position: relative; overflow: hidden;
+  }
+  #screen-auth .landing-bg, #screen-auth .grid-overlay { position: absolute; }
+  .auth-box {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px; width: 100%; max-width: 420px;
+    box-shadow: var(--shadow); animation: fadeUp 0.5s ease both;
+  }
+  .auth-box h2 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 6px; }
+  .auth-box .auth-sub { color: var(--text2); font-size: 14px; margin-bottom: 28px; }
+  .role-tabs { display: flex; gap: 6px; margin-bottom: 24px; background: var(--surface2); padding: 5px; border-radius: 10px; }
+  .role-tab {
+    flex: 1; padding: 8px; border-radius: 7px; border: none; background: none;
+    color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s;
+  }
+  .role-tab.active { background: var(--surface3); color: var(--text); font-weight: 500; border: 1px solid var(--border2); }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 11px 14px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    outline: none; transition: border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+  }
+  .form-group select option { background: var(--surface2); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .auth-toggle { margin-top: 18px; text-align: center; font-size: 13px; color: var(--text2); }
+  .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .auth-toggle a:hover { text-decoration: underline; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); font-size: 13px; cursor: pointer; margin-bottom: 24px; transition: color 0.2s; }
+  .back-link:hover { color: var(--text); }
+
+  /* ─── DASHBOARD LAYOUT ─── */
+  #screen-student, #screen-admin, #screen-maintenance {
+    flex-direction: row;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px; min-width: 240px; background: var(--surface);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    padding: 0; overflow: hidden;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .sidebar-logo-text { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+  .sidebar-logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+  .nav-section-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1.2px; padding: 0 8px; margin: 16px 0 6px; font-weight: 600; }
+  .nav-section-label:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 9px; cursor: pointer;
+    color: var(--text2); font-size: 14px; transition: all 0.15s;
+    margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(79,142,247,0.12); color: var(--accent); font-weight: 500; }
+  .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 100px;
+  }
+  .sidebar-user {
+    padding: 16px 20px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+    font-family: 'Syne', sans-serif; flex-shrink: 0;
+  }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-size: 11px; color: var(--text3); }
+  .logout-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; transition: color 0.2s; padding: 4px; }
+  .logout-btn:hover { color: var(--danger); }
+
+  /* MAIN CONTENT */
+  .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    height: 64px; padding: 0 28px; display: flex; align-items: center;
+    border-bottom: 1px solid var(--border); gap: 16px; flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+  .topbar-breadcrumb { font-size: 13px; color: var(--text3); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .topbar-btn {
+    padding: 7px 16px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .topbar-btn:hover { background: var(--surface3); }
+  .topbar-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .topbar-btn.primary:hover { background: #3a7de8; }
+
+  .content-area { flex: 1; overflow-y: auto; padding: 28px; }
+
+  .panel { display: none; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+
+  /* STAT CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 22px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .stat-card .sc-icon { font-size: 22px; margin-bottom: 12px; }
+  .stat-card .sc-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; }
+  .stat-card .sc-label { font-size: 13px; color: var(--text2); margin-top: 4px; }
+  .stat-card .sc-change { font-size: 12px; color: var(--accent3); margin-top: 6px; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 20px;
+  }
+  .card-header {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .card-actions { margin-left: auto; display: flex; gap: 8px; }
+  .card-body { padding: 22px; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .data-table th {
+    text-align: left; padding: 10px 14px;
+    color: var(--text3); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); color: var(--text2); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+  .data-table td strong { color: var(--text); font-weight: 500; }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .badge-green { background: rgba(34,211,165,0.12); color: var(--accent3); }
+  .badge-blue { background: rgba(79,142,247,0.12); color: var(--accent); }
+  .badge-orange { background: rgba(247,164,79,0.12); color: var(--warning); }
+  .badge-red { background: rgba(247,92,92,0.12); color: var(--danger); }
+  .badge-purple { background: rgba(124,92,252,0.12); color: var(--accent2); }
+
+  /* ICON BUTTONS */
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 13px; transition: all 0.15s;
+  }
+  .icon-btn:hover { background: var(--surface3); color: var(--text); }
+  .icon-btn.approve:hover { background: rgba(34,211,165,0.15); color: var(--accent3); border-color: var(--accent3); }
+  .icon-btn.reject:hover { background: rgba(247,92,92,0.15); color: var(--danger); border-color: var(--danger); }
+
+  /* ROOM GRID */
+  .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .room-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; cursor: pointer;
+    transition: all 0.2s; text-align: center;
+  }
+  .room-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .room-card.available { border-color: rgba(34,211,165,0.2); }
+  .room-card.occupied { border-color: rgba(247,92,92,0.15); }
+  .room-card.maintenance { border-color: rgba(247,164,79,0.2); }
+  .room-number { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .room-info { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+
+  /* COMPLAINT FORM */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s;
+    color: var(--text3); font-size: 13px;
+  }
+  .upload-area:hover { border-color: var(--accent); color: var(--accent); }
+  .upload-area .upload-icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* COMPLAINT DETAIL CARD */
+  .complaint-detail {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center; z-index: 100;
+    animation: fadeIn 0.2s ease;
+  }
+  .complaint-detail.open { display: flex; }
+  .complaint-detail-box {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 32px; width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+    animation: fadeUp 0.3s ease;
+  }
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .detail-id { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .detail-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
+  .close-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 20px; transition: color 0.2s; }
+  .close-btn:hover { color: var(--text); }
+  .detail-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .detail-meta-item { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .detail-meta-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .detail-meta-value { font-size: 14px; margin-top: 3px; color: var(--text); }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 100px; height: 6px; margin: 4px 0 16px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s; }
+  .timeline { margin-top: 20px; }
+  .timeline-item { display: flex; gap: 14px; margin-bottom: 16px; }
+  .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); margin-top: 4px; flex-shrink: 0; }
+  .timeline-dot.done { background: var(--accent3); }
+  .timeline-dot.pending { background: var(--surface3); border: 2px solid var(--border2); }
+  .timeline-content { font-size: 13px; }
+  .timeline-content strong { color: var(--text); font-size: 14px; }
+  .timeline-content span { color: var(--text3); font-size: 12px; display: block; margin-top: 2px; }
+
+  /* NOTIFICATION TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 12px; padding: 14px 20px; font-size: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,142,247,0.1);
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(100px); opacity: 0; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .toast.show { transform: none; opacity: 1; }
+  .toast .toast-icon { font-size: 18px; }
+
+  /* PROFILE */
+  .profile-header {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+  }
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 700; font-family: 'Syne', sans-serif; color: #fff;
+    flex-shrink: 0;
+  }
+  .profile-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; }
+  .profile-meta { font-size: 13px; color: var(--text2); margin-top: 4px; display: flex; gap: 16px; }
+  .profile-meta span { display: flex; align-items: center; gap: 5px; }
+
+  /* ALLOCATION RESULT */
+  .allocation-result {
+    text-align: center; padding: 40px 24px;
+  }
+  .alloc-icon { font-size: 56px; margin-bottom: 16px; }
+  .alloc-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .alloc-sub { color: var(--text2); font-size: 15px; margin-bottom: 32px; }
+  .alloc-details {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 340px; margin: 0 auto 28px;
+  }
+  .alloc-detail-item {
+    background: var(--surface2); border-radius: 10px; padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .alloc-detail-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+  .alloc-detail-value { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--accent); }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 24px; color: var(--text3); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state .empty-text { font-size: 15px; }
+
+  /* SEARCH BAR */
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0 14px;
+    margin-bottom: 16px;
+  }
+  .search-bar input {
+    flex: 1; padding: 10px 0; background: none; border: none;
+    color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  .search-bar .search-icon { color: var(--text3); font-size: 15px; }
+
+  /* FILTER TABS */
+  .filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .filter-tab {
+    padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: none; color: var(--text2); font-size: 13px; cursor: pointer;
+    transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .filter-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  /* MAINTENANCE SPECIFIC */
+  .complaint-queue-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 22px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .complaint-queue-item:last-child { border-bottom: none; }
+  .complaint-queue-item:hover { background: var(--surface2); }
+  .cqi-icon { font-size: 22px; width: 40px; height: 40px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .cqi-content { flex: 1; }
+  .cqi-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .cqi-meta { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { width: 60px; min-width: 60px; }
+    .sidebar-logo-text, .sidebar-logo-sub, .nav-item span:not(.nav-icon), .user-info, .nav-section-label, .nav-badge { display: none; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .user-avatar { margin: 0 auto; }
+    .sidebar-user { justify-content: center; padding: 16px; }
+    .form-row { grid-template-columns: 1fr; }
+    .alloc-details { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: LANDING
+═══════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-bg"></div>
+  <div class="grid-overlay"></div>
+  <div class="landing-content">
+    <div class="logo-badge"><div class="logo-dot"></div> ResidenceOS v2.0</div>
+    <h1 class="landing-title">Smart <span>Hostel</span><br>Management</h1>
+    <p class="landing-sub">A unified platform for students, administrators, and maintenance teams — managing rooms, complaints, and operations seamlessly.</p>
+    <div class="landing-actions">
+      <button class="btn-primary" onclick="showAuth('login')">🔐 Sign In</button>
+      <button class="btn-secondary" onclick="showAuth('register')">✏️ Register as Student</button>
+    </div>
+    <div class="preview-cards">
+      <div class="preview-card">
+        <div class="pc-label">Total Rooms</div>
+        <div class="pc-value blue">248</div>
+      </div>
+      <div class="preview-card">
+        <div class="pc-label">Allocated</div>
+        <div class="pc-value green">192</div>
+      </div>
+      <div class="preview-card">
+        <div class="pc-label">Open Issues</div>
+        <div class="pc-value purple">14</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: AUTH
+═══════════════════════════════════════════ -->
+<div id="screen-auth" class="screen">
+  <div class="landing-bg"></div>
+  <div class="grid-overlay"></div>
+  <div class="auth-box">
+    <span class="back-link" onclick="showScreen('landing')">← Back to home</span>
+    <h2 id="auth-title">Welcome back</h2>
+    <p class="auth-sub" id="auth-sub">Sign in to your account to continue</p>
+
+    <!-- LOGIN MODE -->
+    <div id="auth-login-mode">
+      <div class="role-tabs">
+        <button class="role-tab active" onclick="setRole(this,'student')">🎓 Student</button>
+        <button class="role-tab" onclick="setRole(this,'admin')">⚙️ Admin</button>
+        <button class="role-tab" onclick="setRole(this,'maintenance')">🔧 Staff</button>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@university.edu" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:8px" onclick="doLogin()">Sign In →</button>
+      <div class="auth-toggle">Don't have an account? <a onclick="showAuth('register')">Register here</a></div>
+    </div>
+
+    <!-- REGISTER MODE -->
+    <div id="auth-register-mode" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Your Full Name" autocomplete="off" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Student ID</label>
+          <input type="text" id="reg-sid" placeholder="STU-2024-001" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <select id="reg-dept">
+            <option>Computer Science</option>
+            <option>Mechanical Engg.</option>
+            <option>Electronics</option>
+            <option>Civil Engg.</option>
+            <option>MBA</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="reg-email" placeholder="you@university.edu" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Create a strong password" />
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:8px" onclick="doRegister()">Create Account →</button>
+      <div class="auth-toggle">Already registered? <a onclick="showAuth('login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: STUDENT DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="screen-student" class="screen">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🏠</div>
+      <div>
+        <div class="sidebar-logo-text">ResidenceOS</div>
+        <div class="sidebar-logo-sub">Student Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Menu</div>
+      <button class="nav-item active" onclick="showPanel('s-home',this)"><span class="nav-icon">⬛</span><span>Dashboard</span></button>
+      <button class="nav-item" onclick="showPanel('s-apply',this)"><span class="nav-icon">🛏️</span><span>Apply for Room</span></button>
+      <button class="nav-item" onclick="showPanel('s-status',this)"><span class="nav-icon">📋</span><span>Allocation Status</span></button>
+      <div class="nav-section-label">Support</div>
+      <button class="nav-item" onclick="showPanel('s-complaint',this)"><span class="nav-icon">📝</span><span>Submit Complaint</span></button>
+      <button class="nav-item" onclick="showPanel('s-track',this)"><span class="nav-icon">🔍</span><span>Track Complaints</span></button>
+      <div class="nav-section-label">Account</div>
+      <button class="nav-item" onclick="showPanel('s-profile',this)"><span class="nav-icon">👤</span><span>My Profile</span></button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="student-sidebar-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="student-sidebar-name">Guest</div>
+        <div class="user-role" id="student-sidebar-role">Student</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">⏏</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="s-topbar-title">Dashboard</div>
+        <div class="topbar-breadcrumb">Student Portal</div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn primary" onclick="showPanel('s-complaint', document.querySelector('[onclick*=\'s-complaint\']'))">+ New Complaint</button>
+      </div>
+    </div>
+    <div class="content-area">
+
+      <!-- HOME PANEL -->
+      <div id="s-home" class="panel active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="sc-icon">🏠</div>
+            <div class="sc-value" style="color:var(--accent)">A-204</div>
+            <div class="sc-label">Assigned Room</div>
+            <div class="sc-change">Block A · Floor 2</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">📝</div>
+            <div class="sc-value">3</div>
+            <div class="sc-label">My Complaints</div>
+            <div class="sc-change">1 resolved</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">⏳</div>
+            <div class="sc-value" style="color:var(--warning)">2</div>
+            <div class="sc-label">Pending Issues</div>
+            <div class="sc-change">Being processed</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon">📅</div>
+            <div class="sc-value" style="color:var(--accent3)">142</div>
+            <div class="sc-label">Days Remaining</div>
+            <div class="sc-change">Current semester</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏠 Room Details</div>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Room No.</div>
+                <div class="alloc-detail-value">A-204</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Block</div>
+                <div class="alloc-detail-value" style="color:var(--accent2)">Block A</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Floor</div>
+                <div class="alloc-detail-value" style="color:var(--accent3)">2nd</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Type</div>
+                <div class="alloc-detail-value" style="color:var(--warning)">Double</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔔 Recent Activity</div>
+          </div>
+          <table class="data-table">
+            <thead><tr>
+              <th>Activity</th><th>Date</th><th>Status</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><strong>Complaint #C-042</strong> — Electrical issue</td><td>Mar 18, 2026</td><td><span class="badge badge-orange">In Progress</span></td></tr>
+              <tr><td><strong>Complaint #C-038</strong> — Wi-Fi not working</td><td>Mar 10, 2026</td><td><span class="badge badge-green">Resolved</span></td></tr>
+              <tr><td><strong>Room Allocation</strong> — A-204 assigned</td><td>Jan 5, 2026</td><td><span class="badge badge-blue">Completed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- APPLY FOR ROOM PANEL -->
+      <div id="s-apply" class="panel" inert>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🛏️ Room Application Form</div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Department</label>
+                <select>
+                  <option>Computer Science</option>
+                  <option>Mechanical Engg.</option>
+                  <option>Electronics</option>
+                  <option>Civil Engg.</option>
+                  <option>MBA</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Year of Study</label>
+                <select>
+                  <option>1st Year</option>
+                  <option>2nd Year</option>
+                  <option>3rd Year</option>
+                  <option>4th Year</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Room Type Preference</label>
+                <select>
+                  <option>Single Room</option>
+                  <option>Double Room</option>
+                  <option>Triple Sharing</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Block Preference</label>
+                <select>
+                  <option>No Preference</option>
+                  <option>Block A</option>
+                  <option>Block B</option>
+                  <option>Block C</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Special Requirements (optional)</label>
+              <textarea placeholder="E.g., ground floor due to disability, near study hall, etc."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Preferred Move-in Date</label>
+              <input type="date" value="2026-04-01" />
+            </div>
+            <div style="margin-top:8px;display:flex;gap:10px">
+              <button class="btn-primary" onclick="submitApplication()">Submit Application →</button>
+              <button class="btn-secondary">Save Draft</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALLOCATION STATUS PANEL -->
+      <div id="s-status" class="panel" inert>
+        <div class="card">
+          <div class="allocation-result">
+            <div class="alloc-icon">✅</div>
+            <div class="alloc-title">Room Allocated!</div>
+            <div class="alloc-sub">Your room has been successfully assigned for the current semester.</div>
+            <div class="alloc-details">
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Room Number</div>
+                <div class="alloc-detail-value">A-204</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Block</div>
+                <div class="alloc-detail-value" style="color:var(--accent2)">Block A</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Floor</div>
+                <div class="alloc-detail-value" style="color:var(--accent3)">2nd</div>
+              </div>
+              <div class="alloc-detail-item">
+                <div class="alloc-detail-label">Status</div>
+                <div class="alloc-detail-value" style="color:var(--accent3)">Active</div>
+              </div>
+            </div>
+            <span class="badge badge-green" style="font-size:13px;padding:6px 16px">✓ Confirmed Allocation</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBMIT COMPLAINT PANEL -->
+      <div id="s-complaint" class="panel" inert>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📝 Submit a Complaint</div>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select id="complaint-category">
+                  <option>🔌 Electrical</option>
+                  <option>🚿 Plumbing</option>
+                  <option>🌐 Internet / Wi-Fi</option>
+                  <option>🪟 Furniture / Fixtures</option>
+                  <option>🧹 Housekeeping</option>
+                  <option>❄️ AC / Heating</option>
+                  <option>🔐 Security</option>
+                  <option>📦 Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Priority</label>
+                <select id="complaint-priority">
+                  <option>Low</option>
+                  <option selected>Medium</option>
+                  <option>High</option>
+                  <option>Urgent</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <input id="complaint-subject" type="text" placeholder="Brief title of your complaint" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="complaint-desc" placeholder="Describe the issue in detail — what happened, when it started, and its impact..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Attach Image (optional)</label>
+              <div class="upload-area" onclick="showToast('📎 File picker opened (demo)')">
+                <div class="upload-icon">📎</div>
+                <div>Click to upload photo of the issue</div>
+                <div style="font-size:11px;margin-top:4px;color:var(--text3)">JPG, PNG up to 5MB</div>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="submitComplaint()">Submit Complaint →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRACK COMPLAINTS PANEL -->
+      <div id="s-track" class="panel" inert>
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input placeholder="Search by ID or description..." />
+        </div>
+        <div class="filter-tabs">
+          <button class="filter-tab active">All (3)</button>
+          <button class="filter-tab">Pending (1)</button>
+          <button class="filter-tab">In Progress (1)</button>
+          <button class="filter-tab">Resolved (1)</button>
+        </div>
+        <div class="card">
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-042','Electrical socket not working','Your complaint has been assigned to maintenance staff and is being actively worked on.','In Progress',66)">
+            <div class="cqi-icon">🔌</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Electrical socket not working — Room A-204</div>
+              <div class="cqi-meta">#C-042 · Mar 18, 2026 · Electrical</div>
+            </div>
+            <span class="badge badge-orange">In Progress</span>
+          </div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-041','Water leakage in bathroom','Your complaint has been logged and is waiting to be assigned.','Pending',10)">
+            <div class="cqi-icon">🚿</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Water leakage in bathroom</div>
+              <div class="cqi-meta">#C-041 · Mar 15, 2026 · Plumbing</div>
+            </div>
+            <span class="badge badge-red">Pending</span>
+          </div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-038','Wi-Fi not connecting in room','The issue was resolved by replacing the access point in your wing.','Resolved',100)">
+            <div class="cqi-icon">🌐</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Wi-Fi not connecting in room</div>
+              <div class="cqi-meta">#C-038 · Mar 10, 2026 · Internet</div>
+            </div>
+            <span class="badge badge-green">Resolved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE PANEL -->
+      <div id="s-profile" class="panel" inert>
+        <div class="profile-header">
+          <div class="profile-avatar" id="profile-avatar">?</div>
+          <div>
+            <div class="profile-name" id="profile-name-display">Guest</div>
+            <div class="profile-meta" id="profile-meta-display">
+              <span>🎓 —</span>
+              <span>📧 —</span>
+              <span>🏠 Room Pending</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Edit Profile</div></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group"><label>Full Name</label><input type="text" id="profile-name" value="" autocomplete="off" placeholder="Your name" /></div>
+              <div class="form-group"><label>Student ID</label><input type="text" id="profile-sid" value="" readonly autocomplete="off" placeholder="STU-ID" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Phone</label><input type="tel" id="profile-phone" value="" autocomplete="off" placeholder="+91 XXXXX XXXXX" /></div>
+              <div class="form-group"><label>Emergency Contact</label><input type="tel" id="profile-emergency" value="" autocomplete="off" placeholder="+91 XXXXX XXXXX" /></div>
+            </div>
+            <div class="form-group"><label>New Password (leave blank to keep current)</label><input type="password" id="profile-password" placeholder="••••••••" autocomplete="new-password" /></div>
+            <button class="btn-primary" onclick="showToast('✅ Profile updated successfully')">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: ADMIN DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⚙️</div>
+      <div>
+        <div class="sidebar-logo-text">ResidenceOS</div>
+        <div class="sidebar-logo-sub">Admin Panel</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <button class="nav-item active" onclick="showPanel('a-home',this)"><span class="nav-icon">📊</span><span>Dashboard</span></button>
+      <div class="nav-section-label">Management</div>
+      <button class="nav-item" onclick="showPanel('a-rooms',this)"><span class="nav-icon">🏠</span><span>Room Management</span></button>
+      <button class="nav-item" onclick="showPanel('a-applications',this)"><span class="nav-icon">📋</span><span>Applications</span><span class="nav-badge">5</span></button>
+      <button class="nav-item" onclick="showPanel('a-complaints',this)"><span class="nav-icon">🔔</span><span>Complaints</span><span class="nav-badge">3</span></button>
+      <div class="nav-section-label">Analytics</div>
+      <button class="nav-item" onclick="showPanel('a-reports',this)"><span class="nav-icon">📈</span><span>Reports</span></button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" style="background:linear-gradient(135deg,#f7a44f,#f75c5c)">RP</div>
+      <div class="user-info">
+        <div class="user-name">Ritu Patel</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">⏏</button>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="a-topbar-title">Admin Dashboard</div>
+        <div class="topbar-breadcrumb">Administration</div>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn primary" onclick="showPanel('a-rooms', document.querySelector('#screen-admin .nav-item:nth-child(3)'))">+ Add Room</button>
+      </div>
+    </div>
+    <div class="content-area">
+
+      <!-- ADMIN HOME -->
+      <div id="a-home" class="panel active">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="sc-icon">🏠</div><div class="sc-value" style="color:var(--accent)">248</div><div class="sc-label">Total Rooms</div><div class="sc-change">↑ 12 added this month</div></div>
+          <div class="stat-card"><div class="sc-icon">✅</div><div class="sc-value" style="color:var(--accent3)">192</div><div class="sc-label">Occupied</div><div class="sc-change">77.4% occupancy</div></div>
+          <div class="stat-card"><div class="sc-icon">📋</div><div class="sc-value" style="color:var(--warning)">5</div><div class="sc-label">Pending Applications</div><div class="sc-change">Awaiting review</div></div>
+          <div class="stat-card"><div class="sc-icon">🔔</div><div class="sc-value" style="color:var(--danger)">14</div><div class="sc-label">Open Complaints</div><div class="sc-change">3 urgent</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Recent Applications</div></div>
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Date</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Priya Nair</strong></td><td>Mar 20</td><td><span class="badge badge-orange">Pending</span></td></tr>
+                <tr><td><strong>Rahul Desai</strong></td><td>Mar 19</td><td><span class="badge badge-orange">Pending</span></td></tr>
+                <tr><td><strong>Anita Verma</strong></td><td>Mar 18</td><td><span class="badge badge-green">Approved</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔔 Recent Complaints</div></div>
+            <table class="data-table">
+              <thead><tr><th>Issue</th><th>Room</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Electrical</strong></td><td>A-204</td><td><span class="badge badge-orange">In Progress</span></td></tr>
+                <tr><td><strong>Plumbing</strong></td><td>B-112</td><td><span class="badge badge-red">Pending</span></td></tr>
+                <tr><td><strong>AC fault</strong></td><td>C-305</td><td><span class="badge badge-red">Pending</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN ROOMS -->
+      <div id="a-rooms" class="panel" inert>
+        <div class="filter-tabs">
+          <button class="filter-tab active" onclick="filterRooms(this,'all')">All (248)</button>
+          <button class="filter-tab" onclick="filterRooms(this,'available')">Available (46)</button>
+          <button class="filter-tab" onclick="filterRooms(this,'occupied')">Occupied (192)</button>
+          <button class="filter-tab" onclick="filterRooms(this,'maintenance')">Maintenance (10)</button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏠 Room Overview</div>
+            <div class="card-actions">
+              <button class="topbar-btn primary" onclick="showToast('🏠 Add Room form opened (demo)')">+ Add Room</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="room-grid" id="room-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN APPLICATIONS -->
+      <div id="a-applications" class="panel" inert>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Student Applications</div></div>
+          <table class="data-table">
+            <thead><tr>
+              <th>Student</th><th>ID</th><th>Department</th><th>Preference</th><th>Date</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="applications-tbody">
+              <tr data-id="app1">
+                <td><strong>Priya Nair</strong></td><td>STU-2024-0201</td><td>Electronics</td><td>Single · Block A</td><td>Mar 20</td>
+                <td><span class="badge badge-orange">Pending</span></td>
+                <td><div style="display:flex;gap:6px">
+                  <button class="icon-btn approve" onclick="approveApp(this,'Priya Nair')" title="Approve">✓</button>
+                  <button class="icon-btn reject" onclick="rejectApp(this,'Priya Nair')" title="Reject">✕</button>
+                </div></td>
+              </tr>
+              <tr data-id="app2">
+                <td><strong>Rahul Desai</strong></td><td>STU-2024-0199</td><td>Mechanical</td><td>Double · Block B</td><td>Mar 19</td>
+                <td><span class="badge badge-orange">Pending</span></td>
+                <td><div style="display:flex;gap:6px">
+                  <button class="icon-btn approve" onclick="approveApp(this,'Rahul Desai')" title="Approve">✓</button>
+                  <button class="icon-btn reject" onclick="rejectApp(this,'Rahul Desai')" title="Reject">✕</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td><strong>Anita Verma</strong></td><td>STU-2024-0195</td><td>CSE</td><td>Single · Any</td><td>Mar 18</td>
+                <td><span class="badge badge-green">Approved</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><strong>Kiran Shah</strong></td><td>STU-2024-0188</td><td>MBA</td><td>Double · Block C</td><td>Mar 15</td>
+                <td><span class="badge badge-red">Rejected</span></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN COMPLAINTS -->
+      <div id="a-complaints" class="panel" inert>
+        <div class="filter-tabs">
+          <button class="filter-tab active">All (14)</button>
+          <button class="filter-tab">Pending (8)</button>
+          <button class="filter-tab">In Progress (3)</button>
+          <button class="filter-tab">Resolved (3)</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔔 Complaints Management</div></div>
+          <table class="data-table">
+            <thead><tr>
+              <th>ID</th><th>Student</th><th>Room</th><th>Category</th><th>Priority</th><th>Status</th><th>Assign To</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>#C-042</strong></td><td class="complaint-student-name">Student</td><td>A-204</td><td>Electrical</td>
+                <td><span class="badge badge-red">High</span></td>
+                <td><span class="badge badge-orange">In Progress</span></td>
+                <td><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer" onchange="showToast('👷 Assigned to '+this.value)">
+                  <option>Mohan Kumar</option><option>Suresh Rao</option><option>Vijay Singh</option>
+                </select></td>
+              </tr>
+              <tr>
+                <td><strong>#C-041</strong></td><td class="complaint-student-name">Student</td><td>A-204</td><td>Plumbing</td>
+                <td><span class="badge badge-orange">Medium</span></td>
+                <td><span class="badge badge-red">Pending</span></td>
+                <td><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer" onchange="showToast('👷 Assigned to '+this.value)">
+                  <option>— Assign —</option><option>Mohan Kumar</option><option>Suresh Rao</option>
+                </select></td>
+              </tr>
+              <tr>
+                <td><strong>#C-040</strong></td><td>Meena Iyer</td><td>C-305</td><td>AC / Heating</td>
+                <td><span class="badge badge-red">Urgent</span></td>
+                <td><span class="badge badge-red">Pending</span></td>
+                <td><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer" onchange="showToast('👷 Assigned to '+this.value)">
+                  <option>— Assign —</option><option>Mohan Kumar</option><option>Suresh Rao</option>
+                </select></td>
+              </tr>
+              <tr>
+                <td><strong>#C-038</strong></td><td class="complaint-student-name">Student</td><td>A-204</td><td>Internet</td>
+                <td><span class="badge">Low</span></td>
+                <td><span class="badge badge-green">Resolved</span></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN REPORTS -->
+      <div id="a-reports" class="panel" inert>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="sc-icon">📈</div><div class="sc-value" style="color:var(--accent3)">77.4%</div><div class="sc-label">Occupancy Rate</div></div>
+          <div class="stat-card"><div class="sc-icon">⚡</div><div class="sc-value" style="color:var(--warning)">2.3 days</div><div class="sc-label">Avg. Complaint Resolution</div></div>
+          <div class="stat-card"><div class="sc-icon">📋</div><div class="sc-value" style="color:var(--accent)">94%</div><div class="sc-label">Application Approval Rate</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Complaints by Category</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:90px;font-size:13px;color:var(--text2)">Electrical</span>
+                <div style="flex:1;background:var(--surface2);border-radius:100px;height:8px;overflow:hidden"><div style="width:65%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px"></div></div>
+                <span style="font-size:13px;color:var(--text);width:30px;text-align:right">65%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:90px;font-size:13px;color:var(--text2)">Plumbing</span>
+                <div style="flex:1;background:var(--surface2);border-radius:100px;height:8px;overflow:hidden"><div style="width:45%;height:100%;background:linear-gradient(90deg,var(--accent3),var(--accent));border-radius:100px"></div></div>
+                <span style="font-size:13px;color:var(--text);width:30px;text-align:right">45%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:90px;font-size:13px;color:var(--text2)">Wi-Fi</span>
+                <div style="flex:1;background:var(--surface2);border-radius:100px;height:8px;overflow:hidden"><div style="width:30%;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:100px"></div></div>
+                <span style="font-size:13px;color:var(--text);width:30px;text-align:right">30%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:90px;font-size:13px;color:var(--text2)">AC / Heat</span>
+                <div style="flex:1;background:var(--surface2);border-radius:100px;height:8px;overflow:hidden"><div style="width:20%;height:100%;background:linear-gradient(90deg,var(--warning),var(--accent));border-radius:100px"></div></div>
+                <span style="font-size:13px;color:var(--text);width:30px;text-align:right">20%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN: MAINTENANCE STAFF DASHBOARD
+═══════════════════════════════════════════ -->
+<div id="screen-maintenance" class="screen">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">🔧</div>
+      <div>
+        <div class="sidebar-logo-text">ResidenceOS</div>
+        <div class="sidebar-logo-sub">Maintenance Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Menu</div>
+      <button class="nav-item active" onclick="showPanel('m-home',this)"><span class="nav-icon">🏠</span><span>Dashboard</span></button>
+      <button class="nav-item" onclick="showPanel('m-assigned',this)"><span class="nav-icon">📋</span><span>Assigned Tasks</span><span class="nav-badge">3</span></button>
+      <button class="nav-item" onclick="showPanel('m-resolved',this)"><span class="nav-icon">✅</span><span>Completed</span></button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" style="background:linear-gradient(135deg,var(--accent3),var(--accent))">MK</div>
+      <div class="user-info">
+        <div class="user-name">Mohan Kumar</div>
+        <div class="user-role">Maintenance Staff</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">⏏</button>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="m-topbar-title">Maintenance Dashboard</div>
+        <div class="topbar-breadcrumb">Staff Portal</div>
+      </div>
+    </div>
+    <div class="content-area">
+
+      <!-- MAINT HOME -->
+      <div id="m-home" class="panel active">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="sc-icon">📋</div><div class="sc-value" style="color:var(--warning)">3</div><div class="sc-label">Assigned Tasks</div></div>
+          <div class="stat-card"><div class="sc-icon">✅</div><div class="sc-value" style="color:var(--accent3)">18</div><div class="sc-label">Completed This Month</div></div>
+          <div class="stat-card"><div class="sc-icon">⚡</div><div class="sc-value" style="color:var(--accent)">1.9 days</div><div class="sc-label">Avg. Resolution Time</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔔 Urgent Tasks Today</div></div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-042','Electrical socket not working in Room A-204','Assigned to you. Please visit the room and fix the socket issue and update the status.','In Progress',66)">
+            <div class="cqi-icon">🔌</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Electrical socket not working — Room A-204</div>
+              <div class="cqi-meta">#C-042 · Assigned Mar 18 · HIGH PRIORITY</div>
+            </div>
+            <span class="badge badge-red">Urgent</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSIGNED TASKS -->
+      <div id="m-assigned" class="panel" inert>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 Assigned Complaints</div></div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-042','Electrical socket not working','Assigned to you. Visit Room A-204 and repair the faulty socket.','In Progress',66)">
+            <div class="cqi-icon">🔌</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Electrical socket not working — Room A-204</div>
+              <div class="cqi-meta">#C-042 · Mar 18, 2026 · Electrical</div>
+            </div>
+            <span class="badge badge-orange">In Progress</span>
+          </div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-045','Broken window latch','Room B-208 has a broken window latch on the 2nd floor. Please fix and verify closure.','Pending',0)">
+            <div class="cqi-icon">🪟</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Broken window latch — Room B-208</div>
+              <div class="cqi-meta">#C-045 · Mar 21, 2026 · Furniture</div>
+            </div>
+            <span class="badge badge-red">Pending</span>
+          </div>
+          <div class="complaint-queue-item" onclick="openComplaintDetail('C-040','AC not cooling','Room C-305 AC unit is not maintaining temperature. Check refrigerant levels and compressor.','Pending',5)">
+            <div class="cqi-icon">❄️</div>
+            <div class="cqi-content">
+              <div class="cqi-title">AC not cooling properly — Room C-305</div>
+              <div class="cqi-meta">#C-040 · Mar 20, 2026 · AC / Heating</div>
+            </div>
+            <span class="badge badge-red">Pending</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESOLVED TASKS -->
+      <div id="m-resolved" class="panel" inert>
+        <div class="card">
+          <div class="card-header"><div class="card-title">✅ Completed Tasks</div></div>
+          <div class="complaint-queue-item">
+            <div class="cqi-icon">🌐</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Wi-Fi access point replaced — Block A Wing 2</div>
+              <div class="cqi-meta">#C-038 · Resolved Mar 12, 2026</div>
+            </div>
+            <span class="badge badge-green">Resolved</span>
+          </div>
+          <div class="complaint-queue-item">
+            <div class="cqi-icon">🚿</div>
+            <div class="cqi-content">
+              <div class="cqi-title">Tap washer replaced — Room A-108</div>
+              <div class="cqi-meta">#C-035 · Resolved Mar 9, 2026</div>
+            </div>
+            <span class="badge badge-green">Resolved</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- COMPLAINT DETAIL MODAL -->
+<div class="complaint-detail" id="complaint-modal">
+  <div class="complaint-detail-box">
+    <div class="detail-header">
+      <div>
+        <div class="detail-id" id="modal-id">#C-042</div>
+        <div class="detail-title" id="modal-title">Issue Title</div>
+      </div>
+      <button class="close-btn" onclick="closeComplaintDetail()">✕</button>
+    </div>
+    <div class="detail-meta">
+      <div class="detail-meta-item"><div class="detail-meta-label">Category</div><div class="detail-meta-value">Electrical</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Room</div><div class="detail-meta-value">A-204</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Priority</div><div class="detail-meta-value">High</div></div>
+      <div class="detail-meta-item"><div class="detail-meta-label">Submitted</div><div class="detail-meta-value">Mar 18, 2026</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="modal-desc">Description goes here.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px">
+      <span style="color:var(--text2)">Resolution Progress</span>
+      <span id="modal-progress-label" style="color:var(--accent);font-weight:600">66%</span>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="modal-progress-bar" style="width:66%"></div></div>
+    <div class="badge" id="modal-status" style="margin-bottom:20px">In Progress</div>
+    <div class="timeline">
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><strong>Complaint Submitted</strong><span>Mar 18, 2026 · 10:24 AM</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><strong>Reviewed by Admin</strong><span>Mar 18, 2026 · 2:00 PM</span></div></div>
+      <div class="timeline-item" id="modal-timeline-3"><div class="timeline-dot"></div><div class="timeline-content"><strong>Assigned to Staff</strong><span>Mar 19, 2026</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-content"><strong>Work In Progress</strong><span>—</span></div></div>
+      <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-content"><strong>Resolved</strong><span>—</span></div></div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:10px" id="modal-actions">
+      <button class="btn-primary" onclick="markResolved()">Mark as Resolved ✓</button>
+      <button class="btn-secondary" onclick="closeComplaintDetail()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <span id="toast-msg">Action successful</span>
+</div>
+
+<script>
+  let currentRole = 'student';
+  let currentComplaintId = '';
+
+  // ─── NAVIGATION ───
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+  }
+
+  function showAuth(mode) {
+    showScreen('auth');
+    const isLogin = mode === 'login';
+    document.getElementById('auth-login-mode').style.display = isLogin ? 'block' : 'none';
+    document.getElementById('auth-register-mode').style.display = isLogin ? 'none' : 'block';
+    document.getElementById('auth-title').textContent = isLogin ? 'Welcome back' : 'Create Account';
+    document.getElementById('auth-sub').textContent = isLogin
+      ? 'Sign in to your account to continue'
+      : 'Register as a new student resident';
+  }
+
+  function setRole(btn, role) {
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentRole = role;
+  }
+
+  // In-memory user store — no sessionStorage (avoids stale cached data)
+  let currentUser = null;
+
+  function doLogin() {
+    const screens = { student: 'student', admin: 'admin', maintenance: 'maintenance' };
+    const screenId = screens[currentRole];
+    showScreen(screenId);
+    if (currentRole === 'student') {
+      if (currentUser) {
+        applyUserToUI(currentUser);
+      } else {
+        const email = document.getElementById('login-email').value.trim();
+        const name  = email ? email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : 'Student User';
+        applyUserToUI({ name, email, dept: '', sid: '' });
+      }
+    }
+    // Mark all panels inert, activate home
+    const homeId = screenId[0] + '-home';
+    document.querySelectorAll(`#screen-${screenId} .panel`).forEach(p => {
+      p.setAttribute('inert', '');
+      p.classList.remove('active');
+    });
+    const homePanel = document.getElementById(homeId);
+    if (homePanel) { homePanel.classList.add('active'); homePanel.removeAttribute('inert'); }
+    if (currentRole === 'admin') generateRoomGrid();
+    showToast('👋 Welcome back!');
+  }
+
+  function doRegister() {
+    const name = document.getElementById('reg-name').value.trim();
+    const sid  = document.getElementById('reg-sid').value.trim();
+    const dept = document.getElementById('reg-dept').value;
+    const email= document.getElementById('reg-email').value.trim();
+    const pass = document.getElementById('reg-password').value;
+    if (!name)  { showToast('⚠️ Please enter your full name.'); return; }
+    if (!email) { showToast('⚠️ Please enter your email.'); return; }
+    if (!pass)  { showToast('⚠️ Please create a password.'); return; }
+    // Save in memory only — no sessionStorage
+    currentUser = { name, sid: sid || 'STU-2026-NEW', dept, email };
+    showToast('✅ Account created! Please sign in.');
+    showAuth('login');
+  }
+
+  function applyUserToUI(user) {
+    const initials = user.name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+
+    // Sidebar
+    document.getElementById('student-sidebar-avatar').textContent = initials;
+    document.getElementById('student-sidebar-name').textContent   = user.name;
+    document.getElementById('student-sidebar-role').textContent   = 'Student · ' + (user.dept ? user.dept.split(' ')[0] : 'General');
+
+    // Profile header
+    document.getElementById('profile-avatar').textContent       = initials;
+    document.getElementById('profile-name-display').textContent = user.name;
+    document.getElementById('profile-meta-display').innerHTML   =
+      '<span>🎓 ' + (user.dept || '—') + '</span>' +
+      '<span>📧 ' + (user.email || '—') + '</span>' +
+      '<span>🏠 Room Pending</span>';
+
+    // Profile edit form
+    document.getElementById('profile-name').value = user.name;
+    document.getElementById('profile-sid').value  = user.sid || '';
+
+    // Complaint rows
+    document.querySelectorAll('.complaint-student-name').forEach(td => td.textContent = user.name);
+  }
+
+  function logout() {
+    currentUser = null;
+    showScreen('landing');
+  }
+
+  function showPanel(id, navEl) {
+    const screen = id.startsWith('s-') ? 'student' : id.startsWith('a-') ? 'admin' : 'maintenance';
+    document.querySelectorAll(`#screen-${screen} .panel`).forEach(p => {
+      p.classList.remove('active');
+      p.setAttribute('inert', '');
+    });
+    const panel = document.getElementById(id);
+    if (panel) {
+      panel.classList.add('active');
+      panel.removeAttribute('inert');
+    }
+
+    if (navEl) {
+      const sidebar = navEl.closest('.sidebar');
+      if (sidebar) sidebar.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      navEl.classList.add('active');
+    }
+
+    const titles = {
+      's-home': 'Dashboard', 's-apply': 'Apply for Room', 's-status': 'Allocation Status',
+      's-complaint': 'Submit Complaint', 's-track': 'Track Complaints', 's-profile': 'My Profile',
+      'a-home': 'Admin Dashboard', 'a-rooms': 'Room Management', 'a-applications': 'Student Applications',
+      'a-complaints': 'Complaints', 'a-reports': 'Reports & Analytics',
+      'm-home': 'Dashboard', 'm-assigned': 'Assigned Tasks', 'm-resolved': 'Completed Tasks'
+    };
+    const prefix = id.split('-')[0];
+    const titleEl = document.getElementById(prefix + '-topbar-title');
+    if (titleEl && titles[id]) titleEl.textContent = titles[id];
+  }
+
+  // ─── ROOM GRID ───
+  function generateRoomGrid() {
+    const grid = document.getElementById('room-grid');
+    if (!grid || grid.children.length > 0) return;
+    const statuses = ['available','occupied','occupied','occupied','maintenance','occupied'];
+    const blocks = ['A','B','C'];
+    blocks.forEach(block => {
+      for (let i = 1; i <= 8; i++) {
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        const num = block + '-' + String(i * 100 + Math.floor(Math.random()*10+1)).padStart(3,'0').slice(-3);
+        const card = document.createElement('div');
+        card.className = `room-card ${status}`;
+        card.innerHTML = `
+          <div class="room-number">${num}</div>
+          <div class="room-info">Floor ${Math.ceil(i/2)} · ${status==='occupied'?'Double':'Single'}</div>
+          <span class="badge ${status==='available'?'badge-green':status==='occupied'?'badge-red':'badge-orange'}">${status}</span>
+        `;
+        card.onclick = () => showToast(`🏠 Room ${num} — ${status}`);
+        grid.appendChild(card);
+      }
+    });
+  }
+
+  // ─── COMPLAINT DETAIL ───
+  function openComplaintDetail(id, title, desc, status, progress) {
+    currentComplaintId = id;
+    document.getElementById('modal-id').textContent = '#' + id;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-desc').textContent = desc;
+    document.getElementById('modal-progress-bar').style.width = progress + '%';
+    document.getElementById('modal-progress-label').textContent = progress + '%';
+    const statusBadge = document.getElementById('modal-status');
+    statusBadge.textContent = status;
+    statusBadge.className = 'badge ' + (status==='Resolved'?'badge-green':status==='In Progress'?'badge-orange':'badge-red');
+    const t3 = document.getElementById('modal-timeline-3').querySelector('.timeline-dot');
+    t3.className = 'timeline-dot ' + (progress > 30 ? 'done' : 'pending');
+    const actions = document.getElementById('modal-actions');
+    actions.style.display = status === 'Resolved' ? 'none' : 'flex';
+    document.getElementById('complaint-modal').classList.add('open');
+  }
+
+  function closeComplaintDetail() {
+    document.getElementById('complaint-modal').classList.remove('open');
+  }
+
+  function markResolved() {
+    closeComplaintDetail();
+    showToast('✅ Complaint #' + currentComplaintId + ' marked as resolved!');
+  }
+
+  // ─── APPLICATION ACTIONS ───
+  function approveApp(btn, name) {
+    const row = btn.closest('tr');
+    row.querySelector('.badge').className = 'badge badge-green';
+    row.querySelector('.badge').textContent = 'Approved';
+    row.cells[6].innerHTML = '—';
+    showToast('✅ Application approved for ' + name);
+  }
+
+  function rejectApp(btn, name) {
+    const row = btn.closest('tr');
+    row.querySelector('.badge').className = 'badge badge-red';
+    row.querySelector('.badge').textContent = 'Rejected';
+    row.cells[6].innerHTML = '—';
+    showToast('❌ Application rejected for ' + name);
+  }
+
+  // ─── FORMS ───
+  function submitApplication() {
+    showToast('📋 Application submitted! You will be notified upon allocation.');
+    setTimeout(() => showPanel('s-status', document.querySelector('[onclick*="s-status"]')), 1200);
+  }
+
+  function submitComplaint() {
+    const category = document.getElementById('complaint-category').value;
+    const priority = document.getElementById('complaint-priority').value;
+    const subject = document.getElementById('complaint-subject').value.trim();
+    const desc = document.getElementById('complaint-desc').value.trim();
+
+    if (!subject) { showToast('⚠️ Please enter a subject for your complaint.'); return; }
+    if (!desc)    { showToast('⚠️ Please describe the issue before submitting.'); return; }
+
+    const id = 'C-0' + (Math.floor(Math.random() * 90) + 50);
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+    const categoryIcons = {
+      '🔌 Electrical':'🔌','🚿 Plumbing':'🚿','🌐 Internet / Wi-Fi':'🌐',
+      '🪟 Furniture / Fixtures':'🪟','🧹 Housekeeping':'🧹',
+      '❄️ AC / Heating':'❄️','🔐 Security':'🔐','📦 Other':'📦'
+    };
+    const icon = categoryIcons[category] || '📦';
+    const catLabel = category.replace(/^[^\s]+\s/, '');
+
+    // Add to student track list
+    const trackCard = document.querySelector('#s-track .card');
+    const newItem = document.createElement('div');
+    newItem.className = 'complaint-queue-item';
+    newItem.innerHTML = `
+      <div class="cqi-icon">${icon}</div>
+      <div class="cqi-content">
+        <div class="cqi-title">${subject} — Room A-204</div>
+        <div class="cqi-meta">#${id} · ${dateStr} · ${catLabel}</div>
+      </div>
+      <span class="badge badge-red">Pending</span>
+    `;
+    newItem.onclick = () => openComplaintDetail(id, subject, desc, 'Pending', 0);
+    trackCard.insertBefore(newItem, trackCard.firstChild);
+
+    // Update filter tab count
+    const allTab = document.querySelector('#s-track .filter-tabs .filter-tab:first-child');
+    const pendingTab = document.querySelector('#s-track .filter-tabs .filter-tab:nth-child(2)');
+    const allCount = trackCard.querySelectorAll('.complaint-queue-item').length;
+    const pendingCount = trackCard.querySelectorAll('.badge-red').length;
+    allTab.textContent = `All (${allCount})`;
+    pendingTab.textContent = `Pending (${pendingCount})`;
+
+    // Also push to admin complaints table
+    const adminTbody = document.querySelector('#a-complaints table tbody');
+    if (adminTbody) {
+      const priorityClass = priority === 'Urgent' || priority === 'High' ? 'badge-red' : priority === 'Medium' ? 'badge-orange' : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>#${id}</strong></td>
+        <td class="complaint-student-name">Student</td>
+        <td>A-204</td>
+        <td>${catLabel}</td>
+        <td><span class="badge ${priorityClass}">${priority}</span></td>
+        <td><span class="badge badge-red">Pending</span></td>
+        <td><select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer" onchange="showToast('👷 Assigned to '+this.value)">
+          <option>— Assign —</option><option>Mohan Kumar</option><option>Suresh Rao</option><option>Vijay Singh</option>
+        </select></td>
+      `;
+      adminTbody.insertBefore(tr, adminTbody.firstChild);
+    }
+
+    // Clear form
+    document.getElementById('complaint-subject').value = '';
+    document.getElementById('complaint-desc').value = '';
+
+    showToast(`📝 Complaint submitted! ID: #${id}`);
+    setTimeout(() => showPanel('s-track', document.querySelector('[onclick*="s-track"]')), 1200);
+  }
+
+  function filterRooms(btn, filter) {
+    document.querySelectorAll('#screen-admin .filter-tabs .filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.room-card').forEach(c => {
+      c.style.display = (filter === 'all' || c.classList.contains(filter)) ? '' : 'none';
+    });
+  }
+
+  // ─── TOAST ───
+  let toastTimer;
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('complaint-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeComplaintDetail();
+  });
+</script>
+</body>
+</html>
