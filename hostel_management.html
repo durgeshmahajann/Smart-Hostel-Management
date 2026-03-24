@@ -239,11 +239,16 @@
         <span style="color:var(--text3);font-size:12px">·</span>
         <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-staff')">🔧 Staff Register</a>
       </div>
-      <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text3)">
-        <strong style="color:var(--text2)">Demo accounts:</strong><br>
-        Student: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="087b7c7d6c6d667c487d66617e6d7a7b617c71266d6c7d">[email&#160;protected]</a> / student123<br>
-        Admin: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2746434a4e496752494e514255544e535e09424352">[email&#160;protected]</a> / admin123<br>
-        Staff: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="cfa2a0a7aea18fbaa1a6b9aabdbca6bbb6e1aaabba">[email&#160;protected]</a> / maint123
+      <div style="margin-top:14px;padding:14px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <strong style="color:var(--text2);font-size:13px">🔐 All Accounts</strong>
+          <button onclick="toggleAccountList()" id="view-accounts-btn"
+            style="background:var(--surface3);border:1px solid var(--border2);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">
+            Show
+          </button>
+        </div>
+        <div id="account-list" style="display:none"></div>
+        <div id="account-list-hidden" style="color:var(--text3);font-size:11px">Click Show to see all registered accounts and passwords.</div>
       </div>
     </div>
 
@@ -1729,6 +1734,69 @@ function priorityBadge(p) {
 
 function noDataRow(cols) {
   return `<tr><td colspan="${cols}" style="text-align:center;padding:24px;color:var(--text3)">No data found</td></tr>`;
+}
+
+// ─── ACCOUNT VIEWER ──────────────────────────────────────────────────────────
+function toggleAccountList() {
+  const list    = document.getElementById('account-list');
+  const hint    = document.getElementById('account-list-hidden');
+  const btn     = document.getElementById('view-accounts-btn');
+  const visible = list.style.display !== 'none';
+
+  if (visible) {
+    list.style.display = 'none';
+    hint.style.display = 'block';
+    btn.textContent = 'Show';
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem('ros_users') || '[]');
+  const roleColors = { admin: '#f7a44f', student: '#4f8ef7', maintenance: '#22d3a5' };
+
+  if (users.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px">No accounts registered yet.</div>';
+  } else {
+    list.innerHTML = '';
+    users.forEach(function(u, i) {
+      const color = roleColors[u.role] || '#8b90a0';
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)';
+      row.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<span style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px">' + u.role + '</span>' +
+          '<span style="color:var(--text);font-weight:600;font-size:12px">' + u.name + '</span>' +
+        '</div>' +
+        '<div style="color:var(--text2);font-size:11px;margin-bottom:2px">📧 ' + u.email + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="color:var(--text3);font-size:11px;font-family:monospace">🔑 ' + u.password + '</span>' +
+        '</div>';
+
+      // Use button — created separately to safely attach event
+      const useBtn = document.createElement('button');
+      useBtn.textContent = 'Use';
+      useBtn.style.cssText = 'background:var(--accent);border:none;color:#fff;border-radius:4px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px;font-family:inherit';
+      useBtn.addEventListener('click', function() { fillLogin(u.email, u.password, u.role); });
+      row.appendChild(useBtn);
+      list.appendChild(row);
+    });
+  }
+
+  list.style.display = 'block';
+  hint.style.display = 'none';
+  btn.textContent = 'Hide';
+}
+
+
+function fillLogin(email, password, role) {
+  document.getElementById('login-email').value    = email;
+  document.getElementById('login-password').value = password;
+  const roleMap = { student: 0, admin: 1, maintenance: 2 };
+  const tabs = document.querySelectorAll('.role-tab');
+  const idx  = roleMap[role] !== undefined ? roleMap[role] : 0;
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  if (tabs[idx]) { tabs[idx].classList.add('active'); }
+  currentRole = role || 'student';
+  showToast('Credentials filled — click Sign In!');
 }
 
 // ─── ACCESS CODES ────────────────────────────────────────────────────────────
