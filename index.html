@@ -175,6 +175,17 @@
   .cqi-meta { font-size:12px; color:var(--text3); margin-top:3px; }
   .empty-state { text-align:center; padding:60px 24px; color:var(--text3); }
   .empty-state .ei { font-size:48px; margin-bottom:12px; opacity:.4; }
+  /* FORGOT PASSWORD STEPS */
+  .fp-step {
+    width:30px; height:30px; border-radius:50%; background:var(--surface3);
+    border:2px solid var(--border2); display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:var(--text3); flex-shrink:0; transition:all .3s;
+  }
+  .fp-step.fp-step-active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .fp-step.fp-step-done { background:var(--accent3); border-color:var(--accent3); color:#fff; }
+  .fp-line { flex:1; height:2px; background:var(--border2); transition:background .3s; }
+  .fp-line.fp-line-done { background:var(--accent3); }
+
   ::-webkit-scrollbar { width:4px; }
   ::-webkit-scrollbar-track { background:transparent; }
   ::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:2px; }
@@ -232,7 +243,10 @@
       <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@university.edu" autocomplete="off"/></div>
       <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"/></div>
       <button class="btn-primary" id="login-btn" style="width:100%;margin-top:8px" onclick="doLogin()">Sign In →</button>
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <div style="text-align:right;margin-top:8px">
+        <a onclick="showAuth('forgot')" style="font-size:12px;color:var(--text3);cursor:pointer;transition:color .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">Forgot password?</a>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
         <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-student')">🎓 Student Register</a>
         <span style="color:var(--text3);font-size:12px">·</span>
         <a class="auth-toggle" style="font-size:12px" onclick="showAuth('register-admin')">⚙️ Admin Register</a>
@@ -250,6 +264,56 @@
         <div id="account-list" style="display:none"></div>
         <div id="account-list-hidden" style="color:var(--text3);font-size:11px">Click Show to see all registered accounts and passwords.</div>
       </div>
+    </div>
+
+    <!-- FORGOT PASSWORD — Step 1: Enter Email -->
+    <div id="auth-forgot" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 14px;background:rgba(247,164,79,0.08);border:1px solid rgba(247,164,79,0.25);border-radius:10px">
+        <span style="font-size:22px">🔑</span>
+        <div><div style="font-size:13px;font-weight:600;color:var(--warning)">Forgot Password</div><div style="font-size:11px;color:var(--text3)">Reset your account password</div></div>
+      </div>
+      <!-- Step indicators -->
+      <div style="display:flex;align-items:center;gap:0;margin-bottom:24px">
+        <div class="fp-step fp-step-active" id="fp-step1-dot">1</div>
+        <div class="fp-line" id="fp-line1"></div>
+        <div class="fp-step" id="fp-step2-dot">2</div>
+        <div class="fp-line" id="fp-line2"></div>
+        <div class="fp-step" id="fp-step3-dot">3</div>
+      </div>
+
+      <!-- STEP 1: Email lookup -->
+      <div id="fp-step1">
+        <div class="form-group"><label>Enter your registered Email</label><input type="email" id="fp-email" placeholder="you@university.edu" autocomplete="off"/></div>
+        <button class="btn-primary" style="width:100%" onclick="fpStep1()">Find My Account →</button>
+      </div>
+
+      <!-- STEP 2: Security question -->
+      <div id="fp-step2" style="display:none">
+        <div style="background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px">
+          <div style="color:var(--text3);font-size:11px;margin-bottom:4px">Account found</div>
+          <div style="color:var(--text);font-weight:600" id="fp-found-name">—</div>
+          <div style="color:var(--text3);font-size:12px" id="fp-found-email">—</div>
+        </div>
+        <div class="form-group">
+          <label id="fp-question-label">Security Question</label>
+          <input type="text" id="fp-answer" placeholder="Your answer" autocomplete="off"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Hint: your registered name, student ID, or email prefix</div>
+        </div>
+        <button class="btn-primary" style="width:100%" onclick="fpStep2()">Verify Identity →</button>
+        <div style="margin-top:10px;text-align:center"><a onclick="showAuth('forgot')" style="font-size:12px;color:var(--text3);cursor:pointer">← Try different email</a></div>
+      </div>
+
+      <!-- STEP 3: Set new password -->
+      <div id="fp-step3" style="display:none">
+        <div style="background:rgba(34,211,165,0.08);border:1px solid rgba(34,211,165,0.2);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--accent3)">
+          ✅ Identity verified! Set your new password below.
+        </div>
+        <div class="form-group"><label>New Password</label><input type="password" id="fp-newpass" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+        <div class="form-group"><label>Confirm New Password</label><input type="password" id="fp-confirmpass" placeholder="Re-enter new password" autocomplete="new-password"/></div>
+        <button class="btn-primary" style="width:100%;background:linear-gradient(135deg,var(--accent3),var(--accent))" onclick="fpStep3()">Reset Password ✓</button>
+      </div>
+
+      <div style="margin-top:14px;text-align:center"><a onclick="showAuth('login')" style="font-size:12px;color:var(--text3);cursor:pointer">← Back to Sign In</a></div>
     </div>
 
     <!-- STUDENT REGISTER -->
@@ -1091,22 +1155,27 @@ function showScreen(id) {
 function showAuth(mode) {
   showScreen('auth');
   // Hide all panels
-  ['auth-login-mode','auth-register-student','auth-register-admin','auth-register-staff']
-    .forEach(id => document.getElementById(id).style.display = 'none');
+  ['auth-login-mode','auth-register-student','auth-register-admin','auth-register-staff','auth-forgot']
+    .forEach(function(id) { document.getElementById(id).style.display = 'none'; });
   document.getElementById('auth-error').classList.remove('show');
 
   const titles = {
-    'login':            ['Welcome back',             'Sign in to your account to continue'],
-    'register-student': ['Student Registration',     'Create your student hostel account'],
-    'register-admin':   ['Admin Registration',       'Create an administrator account'],
-    'register-staff':   ['Staff Registration',       'Create a maintenance staff account'],
+    'login':            ['Welcome back',          'Sign in to your account to continue'],
+    'register-student': ['Student Registration',  'Create your student hostel account'],
+    'register-admin':   ['Admin Registration',    'Create an administrator account'],
+    'register-staff':   ['Staff Registration',    'Create a maintenance staff account'],
+    'forgot':           ['Reset Password',        'Recover access to your account'],
   };
-  const [title, sub] = titles[mode] || titles['login'];
-  document.getElementById('auth-title').textContent = title;
-  document.getElementById('auth-sub').textContent   = sub;
+  const info = titles[mode] || titles['login'];
+  document.getElementById('auth-title').textContent = info[0];
+  document.getElementById('auth-sub').textContent   = info[1];
 
   if (mode === 'login') {
     document.getElementById('auth-login-mode').style.display = 'block';
+  } else if (mode === 'forgot') {
+    // Reset forgot password flow to step 1
+    fpReset();
+    document.getElementById('auth-forgot').style.display = 'block';
   } else {
     document.getElementById('auth-register-' + mode.replace('register-','')).style.display = 'block';
   }
@@ -1781,6 +1850,157 @@ function priorityBadge(p) {
 
 function noDataRow(cols) {
   return `<tr><td colspan="${cols}" style="text-align:center;padding:24px;color:var(--text3)">No data found</td></tr>`;
+}
+
+// ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
+var fpUser = null; // holds the found user during reset flow
+
+function fpReset() {
+  fpUser = null;
+  // Reset steps
+  document.getElementById('fp-step1').style.display    = 'block';
+  document.getElementById('fp-step2').style.display    = 'none';
+  document.getElementById('fp-step3').style.display    = 'none';
+  document.getElementById('fp-email').value            = '';
+  document.getElementById('fp-answer').value           = '';
+  document.getElementById('fp-newpass').value          = '';
+  document.getElementById('fp-confirmpass').value      = '';
+  // Reset step dots
+  document.getElementById('fp-step1-dot').className   = 'fp-step fp-step-active';
+  document.getElementById('fp-step2-dot').className   = 'fp-step';
+  document.getElementById('fp-step3-dot').className   = 'fp-step';
+  document.getElementById('fp-line1').className        = 'fp-line';
+  document.getElementById('fp-line2').className        = 'fp-line';
+}
+
+function fpSetStep(step) {
+  // Update step dots and lines
+  var s1 = document.getElementById('fp-step1-dot');
+  var s2 = document.getElementById('fp-step2-dot');
+  var s3 = document.getElementById('fp-step3-dot');
+  var l1 = document.getElementById('fp-line1');
+  var l2 = document.getElementById('fp-line2');
+  if (step === 1) {
+    s1.className = 'fp-step fp-step-active'; s2.className = 'fp-step'; s3.className = 'fp-step';
+    l1.className = 'fp-line'; l2.className = 'fp-line';
+  } else if (step === 2) {
+    s1.className = 'fp-step fp-step-done'; s2.className = 'fp-step fp-step-active'; s3.className = 'fp-step';
+    l1.className = 'fp-line fp-line-done'; l2.className = 'fp-line';
+  } else if (step === 3) {
+    s1.className = 'fp-step fp-step-done'; s2.className = 'fp-step fp-step-done'; s3.className = 'fp-step fp-step-active';
+    l1.className = 'fp-line fp-line-done'; l2.className = 'fp-line fp-line-done';
+  }
+}
+
+function fpShowError(msg) {
+  var errEl = document.getElementById('auth-error');
+  errEl.textContent = msg;
+  errEl.classList.add('show');
+}
+
+function fpClearError() {
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+// Step 1 — Find account by email
+function fpStep1() {
+  fpClearError();
+  var email = document.getElementById('fp-email').value.trim().toLowerCase();
+  if (!email) { fpShowError('Please enter your email address.'); return; }
+
+  var users = JSON.parse(localStorage.getItem('ros_users') || '[]');
+  var found = users.find(function(u) { return u.email.toLowerCase() === email; });
+
+  if (!found) {
+    fpShowError('No account found with that email address. Please check and try again.');
+    return;
+  }
+
+  fpUser = found;
+
+  // Show account info
+  document.getElementById('fp-found-name').textContent  = found.name;
+  document.getElementById('fp-found-email').textContent = found.email;
+
+  // Set security question based on role
+  var questions = {
+    student:     'Enter your Full Name as registered',
+    admin:       'Enter your Full Name as registered',
+    maintenance: 'Enter your Full Name as registered'
+  };
+  document.getElementById('fp-question-label').textContent = questions[found.role] || 'Enter your Full Name';
+
+  // Show step 2
+  document.getElementById('fp-step1').style.display = 'none';
+  document.getElementById('fp-step2').style.display = 'block';
+  fpSetStep(2);
+}
+
+// Step 2 — Verify identity via name/studentId
+function fpStep2() {
+  fpClearError();
+  if (!fpUser) { showAuth('forgot'); return; }
+
+  var answer = document.getElementById('fp-answer').value.trim().toLowerCase();
+  if (!answer) { fpShowError('Please enter your answer.'); return; }
+
+  // Accept: full name, student ID, or email prefix as valid answers
+  var validAnswers = [
+    fpUser.name.toLowerCase(),
+    (fpUser.student_id || '').toLowerCase(),
+    fpUser.email.split('@')[0].toLowerCase()
+  ].filter(function(a) { return a.length > 0; });
+
+  var matched = validAnswers.some(function(v) { return v === answer; });
+
+  if (!matched) {
+    fpShowError('Answer does not match our records. Try your full name, student ID, or email prefix (part before @).');
+    return;
+  }
+
+  // Show step 3
+  document.getElementById('fp-step2').style.display = 'none';
+  document.getElementById('fp-step3').style.display = 'block';
+  fpSetStep(3);
+}
+
+// Step 3 — Set new password
+function fpStep3() {
+  fpClearError();
+  if (!fpUser) { showAuth('forgot'); return; }
+
+  var newPass     = document.getElementById('fp-newpass').value;
+  var confirmPass = document.getElementById('fp-confirmpass').value;
+
+  if (!newPass)              { fpShowError('Please enter a new password.'); return; }
+  if (newPass.length < 6)    { fpShowError('Password must be at least 6 characters.'); return; }
+  if (newPass !== confirmPass) { fpShowError('Passwords do not match.'); return; }
+  if (newPass === fpUser.password) { fpShowError('New password must be different from your current password.'); return; }
+
+  // Update password in localStorage
+  var users = JSON.parse(localStorage.getItem('ros_users') || '[]');
+  var idx   = users.findIndex(function(u) { return u.id === fpUser.id; });
+  if (idx < 0) { fpShowError('Account not found. Please try again.'); return; }
+
+  users[idx].password = newPass;
+  localStorage.setItem('ros_users', JSON.stringify(users));
+
+  // Also update if this is the current logged-in user
+  var savedUser = JSON.parse(localStorage.getItem('ros_user') || 'null');
+  if (savedUser && savedUser.id === fpUser.id) {
+    localStorage.removeItem('ros_token');
+    localStorage.removeItem('ros_user');
+  }
+
+  fpUser = null;
+  showToast('Password reset successfully! Please sign in with your new password.');
+  showAuth('login');
+
+  // Pre-fill email for convenience
+  setTimeout(function() {
+    var emailEl = document.getElementById('login-email');
+    if (emailEl) emailEl.value = users[idx].email;
+  }, 300);
 }
 
 // ─── ACCOUNT VIEWER ──────────────────────────────────────────────────────────
