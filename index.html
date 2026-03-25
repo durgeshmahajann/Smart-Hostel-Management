@@ -1148,17 +1148,64 @@ async function doLogin() {
   const password = document.getElementById('login-password').value;
   const errEl    = document.getElementById('auth-error');
   errEl.classList.remove('show');
-  if (!email || !password) { errEl.textContent='Email and password required.'; errEl.classList.add('show'); return; }
+
+  if (!email || !password) {
+    errEl.textContent = 'Email and password required.';
+    errEl.classList.add('show'); return;
+  }
+
   const btn = document.getElementById('login-btn');
-  btn.disabled=true; btn.textContent='Signing in...'; loading(true);
+  btn.disabled = true; btn.textContent = 'Signing in...'; loading(true);
+
   try {
     const data = await api('POST', '/auth/login', { email, password });
-    TOKEN = data.token; CURRENT_USER = data.user;
+    const actualRole   = data.user.role;
+    const selectedRole = currentRole;
+    const roleLabels   = { student: 'Student', admin: 'Admin', maintenance: 'Staff' };
+
+    // Strict portal check — must select the correct tab for your account type
+    if (actualRole !== selectedRole) {
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+      loading(false);
+      errEl.textContent = 'Wrong portal! This is a ' +
+        (roleLabels[actualRole] || actualRole).toUpperCase() +
+        ' account. Please click the “' +
+        (roleLabels[actualRole] || actualRole) +
+        '” tab above before signing in.';
+      errEl.classList.add('show');
+      // Highlight the correct tab visually
+      document.querySelectorAll('.role-tab').forEach(function(t) {
+        t.classList.remove('active');
+        t.style.border = '';
+      });
+      var roleIndex = { student: 0, admin: 1, maintenance: 2 };
+      var correctTab = document.querySelectorAll('.role-tab')[roleIndex[actualRole]];
+      if (correctTab) {
+        correctTab.style.border = '2px solid var(--danger)';
+        correctTab.style.color  = 'var(--danger)';
+      }
+      return;
+    }
+
+    // Reset tab styles on successful match
+    document.querySelectorAll('.role-tab').forEach(function(t) {
+      t.style.border = '';
+      t.style.color  = '';
+    });
+
+    TOKEN = data.token;
+    CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
     enterDashboard(CURRENT_USER);
-  } catch(e) { errEl.textContent=e.message; errEl.classList.add('show'); }
-  finally { btn.disabled=false; btn.textContent='Sign In →'; loading(false); }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
+    loading(false);
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  }
 }
 
 async function doRegister(role) {
