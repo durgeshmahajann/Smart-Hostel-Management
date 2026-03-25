@@ -1267,6 +1267,9 @@ async function doLogin() {
     CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
+    loading(false);
     enterDashboard(CURRENT_USER);
   } catch(e) {
     btn.disabled = false;
@@ -1357,15 +1360,17 @@ async function doRegister(role) {
     CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
-    showToast('Account created successfully!');
-    enterDashboard(CURRENT_USER);
-  } catch(e) {
-    errEl.textContent = e.message;
-    errEl.classList.add('show');
-  } finally {
     btn.disabled = false;
     btn.textContent = btnText;
     loading(false);
+    showToast('Account created successfully!');
+    enterDashboard(CURRENT_USER);
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = btnText;
+    loading(false);
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
   }
 }
 
