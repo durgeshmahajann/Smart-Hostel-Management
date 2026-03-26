@@ -196,12 +196,133 @@
     .sidebar-user { justify-content:center; padding:16px; }
     .form-row { grid-template-columns:1fr; }
   }
+
+  /* ── OTP VERIFICATION MODAL ── */
+  .otp-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(4px);
+    display:flex; align-items:center; justify-content:center; z-index:300;
+    opacity:0; pointer-events:none; transition:opacity .3s;
+  }
+  .otp-overlay.open { opacity:1; pointer-events:all; }
+  .otp-box {
+    background:var(--surface); border:1px solid var(--border2); border-radius:20px;
+    padding:36px; width:100%; max-width:420px; box-shadow:0 24px 80px rgba(0,0,0,.7);
+    transform:translateY(20px); transition:transform .3s;
+    position:relative;
+  }
+  .otp-overlay.open .otp-box { transform:translateY(0); }
+  .otp-icon-ring {
+    width:64px; height:64px; border-radius:50%;
+    background:linear-gradient(135deg,rgba(79,142,247,.2),rgba(124,92,252,.2));
+    border:2px solid rgba(79,142,247,.4);
+    display:flex; align-items:center; justify-content:center; font-size:28px;
+    margin:0 auto 20px;
+  }
+  .otp-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .otp-subtitle { font-size:13px; color:var(--text2); text-align:center; margin-bottom:24px; line-height:1.6; }
+  .otp-email-chip {
+    display:inline-flex; align-items:center; gap:6px; background:rgba(79,142,247,.1);
+    border:1px solid rgba(79,142,247,.25); border-radius:100px; padding:3px 12px;
+    font-size:12px; font-weight:600; color:var(--accent);
+  }
+  /* simulated inbox */
+  .otp-inbox {
+    background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+    padding:16px; margin-bottom:20px; position:relative;
+  }
+  .otp-inbox-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .otp-inbox-row { display:flex; align-items:center; gap:10px; }
+  .otp-inbox-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .otp-inbox-from { font-size:11px; color:var(--text3); }
+  .otp-inbox-subject { font-size:13px; font-weight:500; color:var(--text); margin-top:2px; }
+  .otp-code-reveal {
+    margin-top:10px; background:var(--surface3); border-radius:8px; padding:10px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .otp-code-digits {
+    font-family:'Syne',sans-serif; font-size:28px; font-weight:800; letter-spacing:8px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .otp-copy-btn {
+    background:var(--surface2); border:1px solid var(--border2); color:var(--accent);
+    border-radius:6px; padding:5px 12px; font-size:11px; cursor:pointer; font-family:inherit;
+    transition:all .15s;
+  }
+  .otp-copy-btn:hover { background:rgba(79,142,247,.15); }
+  /* digit inputs */
+  .otp-inputs { display:flex; gap:10px; justify-content:center; margin-bottom:20px; }
+  .otp-digit {
+    width:52px; height:60px; border-radius:12px;
+    background:var(--surface2); border:2px solid var(--border);
+    color:var(--text); font-family:'Syne',sans-serif; font-size:26px; font-weight:700;
+    text-align:center; outline:none; transition:border-color .2s, transform .1s;
+  }
+  .otp-digit:focus { border-color:var(--accent); transform:scale(1.05); }
+  .otp-digit.filled { border-color:rgba(79,142,247,.5); }
+  .otp-digit.error { border-color:var(--danger); animation:shake .3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .otp-timer { font-size:12px; color:var(--text3); text-align:center; margin-bottom:16px; }
+  .otp-timer span { color:var(--accent); font-weight:600; }
+  .otp-resend { font-size:12px; color:var(--text3); text-align:center; margin-top:12px; }
+  .otp-resend a { color:var(--accent); cursor:pointer; }
+  .otp-resend a.disabled { color:var(--text3); pointer-events:none; }
+  .otp-verified { display:none; text-align:center; padding:10px 0; }
+  .otp-verified .check-ring {
+    width:64px; height:64px; border-radius:50%; background:rgba(34,211,165,.15);
+    border:2px solid var(--accent3); display:flex; align-items:center; justify-content:center;
+    font-size:28px; margin:0 auto 16px; animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
 </style>
 </head>
 <body>
 
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<!-- EMAIL OTP VERIFICATION MODAL -->
+<div class="otp-overlay" id="otp-overlay">
+  <div class="otp-box">
+    <div class="otp-icon-ring">✉️</div>
+    <div class="otp-title">Verify your Email</div>
+    <div class="otp-subtitle">
+      We've sent a 6-digit code to<br>
+      <span class="otp-email-chip" id="otp-email-display">you@university.edu</span>
+    </div>
+    <div class="otp-inbox">
+      <div class="otp-inbox-label">📥 Simulated Inbox — Demo Mode</div>
+      <div class="otp-inbox-row">
+        <div class="otp-inbox-avatar">🏫</div>
+        <div>
+          <div class="otp-inbox-from">noreply@residenceos.edu · just now</div>
+          <div class="otp-inbox-subject">Your ResidenceOS Verification Code</div>
+        </div>
+      </div>
+      <div class="otp-code-reveal">
+        <div class="otp-code-digits" id="otp-code-display">——————</div>
+        <button class="otp-copy-btn" onclick="otpCopyCode()">Copy</button>
+      </div>
+    </div>
+    <div class="otp-inputs">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d1" oninput="otpMove(this,null,'otp-d2')" onkeydown="otpBack(event,this,null)">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d2" oninput="otpMove(this,'otp-d1','otp-d3')" onkeydown="otpBack(event,this,'otp-d1')">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d3" oninput="otpMove(this,'otp-d2','otp-d4')" onkeydown="otpBack(event,this,'otp-d2')">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d4" oninput="otpMove(this,'otp-d3','otp-d5')" onkeydown="otpBack(event,this,'otp-d3')">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d5" oninput="otpMove(this,'otp-d4','otp-d6')" onkeydown="otpBack(event,this,'otp-d4')">
+      <input class="otp-digit" maxlength="1" type="text" inputmode="numeric" id="otp-d6" oninput="otpMove(this,'otp-d5',null)" onkeydown="otpBack(event,this,'otp-d5')">
+    </div>
+    <div class="otp-timer">Code expires in <span id="otp-timer-count">10:00</span></div>
+    <button class="btn-primary" id="otp-verify-btn" style="width:100%" onclick="otpVerify()">Verify &amp; Create Account →</button>
+    <div class="otp-resend">Didn't get it? <a id="otp-resend-link" class="disabled" onclick="otpResend()">Resend code</a></div>
+    <div style="margin-top:12px;text-align:center"><a onclick="closeOtp()" style="font-size:12px;color:var(--text3);cursor:pointer">← Go back and edit details</a></div>
+    <div class="otp-verified" id="otp-verified-state">
+      <div class="check-ring">✅</div>
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:6px">Email Verified!</div>
+      <div style="font-size:13px;color:var(--text2)">Creating your account…</div>
+    </div>
+  </div>
+</div>
 
 <!-- LANDING -->
 <div id="screen-landing" class="screen active">
@@ -1317,6 +1438,178 @@ async function doLogin() {
   }
 }
 
+// ─── EMAIL OTP AUTHENTICATION ────────────────────────────────────────────────
+let _otpCode = '';
+let _otpPending = null;   // { name, email, password, role, department, studentId, btnId, btnText }
+let _otpTimerInterval = null;
+let _otpResendTimeout = null;
+
+function _generateOtp() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function _validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function openOtp(pendingData) {
+  _otpPending = pendingData;
+  _otpCode = _generateOtp();
+
+  // Update modal UI
+  document.getElementById('otp-email-display').textContent = pendingData.email;
+  document.getElementById('otp-code-display').textContent = _otpCode;
+
+  // Reset digit inputs
+  ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = '';
+    el.classList.remove('filled','error');
+  });
+
+  // Hide verified state, show form
+  document.getElementById('otp-verified-state').style.display = 'none';
+  document.getElementById('otp-verify-btn').style.display = '';
+  document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = '');
+
+  // Start countdown (10 min)
+  _startOtpTimer(600);
+
+  // Resend lock for 30s
+  const resendLink = document.getElementById('otp-resend-link');
+  resendLink.classList.add('disabled');
+  clearTimeout(_otpResendTimeout);
+  _otpResendTimeout = setTimeout(() => { resendLink.classList.remove('disabled'); }, 30000);
+
+  document.getElementById('otp-overlay').classList.add('open');
+  setTimeout(() => { document.getElementById('otp-d1').focus(); }, 300);
+}
+
+function closeOtp() {
+  document.getElementById('otp-overlay').classList.remove('open');
+  clearInterval(_otpTimerInterval);
+  // Re-enable the register button
+  if (_otpPending) {
+    const btn = document.getElementById(_otpPending.btnId);
+    if (btn) { btn.disabled = false; btn.textContent = _otpPending.btnText; }
+  }
+  _otpPending = null;
+}
+
+function _startOtpTimer(seconds) {
+  clearInterval(_otpTimerInterval);
+  let s = seconds;
+  const el = document.getElementById('otp-timer-count');
+  function tick() {
+    const m = String(Math.floor(s / 60)).padStart(2,'0');
+    const sec = String(s % 60).padStart(2,'0');
+    el.textContent = m + ':' + sec;
+    if (s <= 0) {
+      clearInterval(_otpTimerInterval);
+      el.textContent = 'Expired';
+      el.style.color = 'var(--danger)';
+      document.getElementById('otp-verify-btn').disabled = true;
+      document.getElementById('otp-verify-btn').textContent = 'Code Expired — Resend to continue';
+    }
+    s--;
+  }
+  tick();
+  _otpTimerInterval = setInterval(tick, 1000);
+}
+
+function otpMove(el, prevId, nextId) {
+  // Only allow digits
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value) {
+    el.classList.add('filled');
+    if (nextId) document.getElementById(nextId).focus();
+  } else {
+    el.classList.remove('filled');
+  }
+}
+
+function otpBack(e, el, prevId) {
+  if (e.key === 'Backspace' && !el.value && prevId) {
+    document.getElementById(prevId).focus();
+  }
+}
+
+function otpCopyCode() {
+  navigator.clipboard.writeText(_otpCode).then(() => showToast('✅ OTP code copied!')).catch(() => showToast('Code: ' + _otpCode));
+}
+
+function otpResend() {
+  _otpCode = _generateOtp();
+  document.getElementById('otp-code-display').textContent = _otpCode;
+  // Reset timer
+  document.getElementById('otp-timer-count').style.color = '';
+  document.getElementById('otp-verify-btn').disabled = false;
+  document.getElementById('otp-verify-btn').textContent = 'Verify & Create Account →';
+  _startOtpTimer(600);
+  // Lock resend again for 30s
+  const resendLink = document.getElementById('otp-resend-link');
+  resendLink.classList.add('disabled');
+  clearTimeout(_otpResendTimeout);
+  _otpResendTimeout = setTimeout(() => { resendLink.classList.remove('disabled'); }, 30000);
+  // Clear inputs
+  ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = ''; el.classList.remove('filled','error');
+  });
+  showToast('📧 New code generated!');
+  document.getElementById('otp-d1').focus();
+}
+
+async function otpVerify() {
+  const digits = ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].map(id => document.getElementById(id).value).join('');
+  if (digits.length < 6) { showToast('⚠️ Enter all 6 digits.'); return; }
+
+  if (digits !== _otpCode) {
+    ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('error');
+      setTimeout(() => el.classList.remove('error'), 400);
+    });
+    showToast('❌ Incorrect code. Please try again.');
+    return;
+  }
+
+  // Code matched — show success, then create account
+  document.getElementById('otp-verify-btn').style.display = 'none';
+  document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = 'none');
+  document.getElementById('otp-verified-state').style.display = 'block';
+  clearInterval(_otpTimerInterval);
+
+  await new Promise(r => setTimeout(r, 1200));
+
+  const { name, email, password, role, department, studentId, btnId, btnText } = _otpPending;
+  const errEl = document.getElementById('auth-error');
+  const btn   = document.getElementById(btnId);
+
+  loading(true);
+  try {
+    const data = await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
+    TOKEN = data.token;
+    CURRENT_USER = data.user;
+    localStorage.setItem('ros_token', TOKEN);
+    localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
+    loading(false);
+    document.getElementById('otp-overlay').classList.remove('open');
+    _otpPending = null;
+    if (btn) { btn.disabled = false; btn.textContent = btnText; }
+    showToast('🎉 Email verified! Account created successfully!');
+    enterDashboard(CURRENT_USER);
+  } catch(e) {
+    loading(false);
+    document.getElementById('otp-overlay').classList.remove('open');
+    _otpPending = null;
+    if (btn) { btn.disabled = false; btn.textContent = btnText; }
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  }
+}
+
+// ─── REGISTER (now OTP-gated) ────────────────────────────────────────────────
 async function doRegister(role) {
   const errEl = document.getElementById('auth-error');
   errEl.classList.remove('show');
@@ -1336,6 +1629,14 @@ async function doRegister(role) {
       errEl.textContent = 'Name, email and password are required.';
       errEl.classList.add('show'); return;
     }
+    if (!_validateEmail(email)) {
+      errEl.textContent = 'Please enter a valid email address.';
+      errEl.classList.add('show'); return;
+    }
+    if (password.length < 6) {
+      errEl.textContent = 'Password must be at least 6 characters.';
+      errEl.classList.add('show'); return;
+    }
 
   } else if (role === 'admin') {
     name        = document.getElementById('areg-name').value.trim();
@@ -1348,6 +1649,10 @@ async function doRegister(role) {
     btnText     = 'Create Admin Account →';
     if (!name || !email || !password) {
       errEl.textContent = 'Name, email and password are required.';
+      errEl.classList.add('show'); return;
+    }
+    if (!_validateEmail(email)) {
+      errEl.textContent = 'Please enter a valid email address.';
       errEl.classList.add('show'); return;
     }
     if (!regCode) {
@@ -1376,6 +1681,10 @@ async function doRegister(role) {
       errEl.textContent = 'Name, email and password are required.';
       errEl.classList.add('show'); return;
     }
+    if (!_validateEmail(email)) {
+      errEl.textContent = 'Please enter a valid email address.';
+      errEl.classList.add('show'); return;
+    }
     if (!regCode) {
       errEl.textContent = 'Staff registration code is required.';
       errEl.classList.add('show'); return;
@@ -1386,29 +1695,20 @@ async function doRegister(role) {
     }
   }
 
+  // Check email not already registered
+  const existingUsers = getUsers();
+  if (existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+    errEl.textContent = 'This email is already registered. Please sign in instead.';
+    errEl.classList.add('show'); return;
+  }
+
+  // Disable button and launch OTP flow
   const btn = document.getElementById(btnId);
   btn.disabled = true;
-  btn.textContent = 'Creating...';
-  loading(true);
+  btn.textContent = 'Sending verification code…';
 
-  try {
-    const data = await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
-    TOKEN = data.token;
-    CURRENT_USER = data.user;
-    localStorage.setItem('ros_token', TOKEN);
-    localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
-    btn.disabled = false;
-    btn.textContent = btnText;
-    loading(false);
-    showToast('Account created successfully!');
-    enterDashboard(CURRENT_USER);
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = btnText;
-    loading(false);
-    errEl.textContent = e.message;
-    errEl.classList.add('show');
-  }
+  openOtp({ name, email, password, role, department, studentId, btnId, btnText });
+  btn.textContent = 'Verify Email to Continue →';
 }
 
 function enterDashboard(user) {
