@@ -1230,11 +1230,11 @@ function safeUser(u) {
 function parseToken(token) {
   try { return JSON.parse(atob(token)); } catch { return null; }
 }
-
+const BASE_URL = 'http://localhost:5000';
 async function api(method, path, body) {
   await new Promise(r => setTimeout(r, 80)); // small delay for realism
   const tokenData = CURRENT_USER ? { id: CURRENT_USER.id, role: CURRENT_USER.role } : parseToken(TOKEN);
-  const uid  = tokenData?.id;
+  const uid  = tokenData?.id;   
   const role = tokenData?.role;
 
   // Parse query params
