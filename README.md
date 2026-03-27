@@ -4,7 +4,7 @@
 - **Runtime**: Node.js (v18+)
 - **Framework**: Express.js
 - **Database**: SQLite via `better-sqlite3`
-
+- **Auth**: JWT+bycrptjs
 
 ## Quick Start
 
