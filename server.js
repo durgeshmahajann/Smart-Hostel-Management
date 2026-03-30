@@ -1,3 +1,4 @@
+require('dotenv').config();
 // server.js — ResidenceOS Backend Entry Point
 const express = require('express');
 const cors    = require('cors');

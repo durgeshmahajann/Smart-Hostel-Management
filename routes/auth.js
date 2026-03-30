@@ -1,11 +1,20 @@
-// routes/auth.js — Register / Login / Profile
-const express   = require('express');
-const bcrypt    = require('bcryptjs');
-const jwt       = require('jsonwebtoken');
-const db        = require('../db/init');
+// routes/auth.js — Register / Login with OTP / Profile
+const express      = require('express');
+const bcrypt       = require('bcryptjs');
+const jwt          = require('jsonwebtoken');
+const db           = require('../db/init');
 const { auth, JWT_SECRET } = require('../middleware/auth');
+const { sendOTP }  = require('../utils/mailer');
 
 const router = express.Router();
+
+// Store OTPs temporarily in memory
+const otpStore = {};
+
+// Helper: generate 4 digit OTP
+function generateOTP() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
 
 // ── POST /api/auth/register ───────────────────────────────────────────────
 router.post('/register', (req, res) => {
@@ -38,7 +47,7 @@ router.post('/register', (req, res) => {
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────────────────
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { email, password, role } = req.body;
 
   if (!email || !password)
@@ -52,10 +61,77 @@ router.post('/login', (req, res) => {
   if (role && user.role !== role)
     return res.status(403).json({ error: `This account is not registered as ${role}.` });
 
+  const otp = generateOTP();
+  otpStore[email] = {
+    otp,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  };
+
+  try {
+    await sendOTP(email, otp);
+    console.log(`📧 OTP sent to ${email}: ${otp}`);
+    res.json({ message: 'OTP sent to your email. Please verify.', otpSent: true });
+  } catch (err) {
+    console.error('❌ Email sending failed:', err.message);
+    res.json({ 
+      message: 'OTP generated (email failed, check terminal).', 
+      otpSent: false,
+      otp: otp
+    });
+  }
+});
+
+// ── POST /api/auth/verify-otp ─────────────────────────────────────────────
+router.post('/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp)
+    return res.status(400).json({ error: 'Email and OTP are required.' });
+
+  const record = otpStore[email];
+
+  if (!record)
+    return res.status(400).json({ error: 'No OTP found. Please login again.' });
+
+  if (Date.now() > record.expiresAt) {
+    delete otpStore[email];
+    return res.status(400).json({ error: 'OTP expired. Please login again.' });
+  }
+
+  if (record.otp !== otp.toString())
+    return res.status(400).json({ error: 'Incorrect OTP. Please try again.' });
+
+  delete otpStore[email];
+
+  const user = db.prepare('SELECT id, name, email, role, student_id, department, phone FROM users WHERE email = ?')
+    .get(email);
+
   const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-  const { password: _, ...safeUser } = user;
-  res.json({ message: 'Logged in successfully!', token, user: safeUser });
+  res.json({ message: 'Login successful!', token, user });
+});
+
+// ── POST /api/auth/resend-otp ─────────────────────────────────────────────
+router.post('/resend-otp', async (req, res) => {
+  const { email } = req.body;
+
+  const user = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (!user)
+    return res.status(404).json({ error: 'No account found with this email.' });
+
+  const otp = generateOTP();
+  otpStore[email] = {
+    otp,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  };
+
+  try {
+    await sendOTP(email, otp);
+    console.log(`📧 OTP resent to ${email}: ${otp}`);
+    res.json({ message: 'OTP resent successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+  }
 });
 
 // ── GET /api/auth/me ──────────────────────────────────────────────────────
