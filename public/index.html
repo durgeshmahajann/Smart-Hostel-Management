@@ -291,17 +291,16 @@
       <span class="otp-email-chip" id="otp-email-display"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef96809aaf9a8186998a9d9c869b96c18a8b9a">[email&#160;protected]</a></span>
     </div>
     <div class="otp-inbox">
-      <div class="otp-inbox-label">📥 Simulated Inbox — Demo Mode</div>
+      <div class="otp-inbox-label">📧 Check your inbox</div>
       <div class="otp-inbox-row">
         <div class="otp-inbox-avatar">🏫</div>
         <div>
-          <div class="otp-inbox-from"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="80eeeff2e5f0ecf9c0f2e5f3e9e4e5eee3e5eff3aee5e4f5">[email&#160;protected]</a> · just now</div>
+          <div class="otp-inbox-from">noreply@residenceos.com · just now</div>
           <div class="otp-inbox-subject">Your ResidenceOS Verification Code</div>
         </div>
       </div>
-      <div class="otp-code-reveal">
-        <div class="otp-code-digits" id="otp-code-display">——————</div>
-        <button class="otp-copy-btn" onclick="otpCopyCode()">Copy</button>
+      <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6">
+        A 6-digit OTP has been sent to your email. Please check your inbox (and spam folder).
       </div>
     </div>
     <div class="otp-inputs">
@@ -1559,14 +1558,23 @@ function otpCopyCode() {
   navigator.clipboard.writeText(_otpCode).then(() => showToast('✅ OTP code copied!')).catch(() => showToast('Code: ' + _otpCode));
 }
 
-function otpResend() {
-  _otpCode = _generateOtp();
-  document.getElementById('otp-code-display').textContent = _otpCode;
+async function otpResend() {
+  if (!_otpPending) return;
+  const { email } = _otpPending;
+
+  try {
+    await api('POST', '/auth/resend-otp', { email, type: 'register' });
+    showToast('📧 New OTP sent to your email!');
+  } catch(e) {
+    showToast('❌ Could not resend OTP: ' + e.message);
+    return;
+  }
+
   // Reset timer
   document.getElementById('otp-timer-count').style.color = '';
   document.getElementById('otp-verify-btn').disabled = false;
   document.getElementById('otp-verify-btn').textContent = 'Verify & Create Account →';
-  _startOtpTimer(600);
+  _startOtpTimer(300);
   // Lock resend again for 30s
   const resendLink = document.getElementById('otp-resend-link');
   resendLink.classList.add('disabled');
@@ -1577,7 +1585,6 @@ function otpResend() {
     const el = document.getElementById(id);
     el.value = ''; el.classList.remove('filled','error');
   });
-  showToast('📧 New code generated!');
   document.getElementById('otp-d1').focus();
 }
 
@@ -1585,36 +1592,29 @@ async function otpVerify() {
   const digits = ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].map(id => document.getElementById(id).value).join('');
   if (digits.length < 6) { showToast('⚠️ Enter all 6 digits.'); return; }
 
-  if (digits !== _otpCode) {
-    ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
-      const el = document.getElementById(id);
-      el.classList.add('error');
-      setTimeout(() => el.classList.remove('error'), 400);
-    });
-    showToast('❌ Incorrect code. Please try again.');
-    return;
-  }
-
-  // Code matched — show success, then create account
-  document.getElementById('otp-verify-btn').style.display = 'none';
-  document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = 'none');
-  document.getElementById('otp-verified-state').style.display = 'block';
-  clearInterval(_otpTimerInterval);
-
-  await new Promise(r => setTimeout(r, 1200));
-
-  const { name, email, password, role, department, studentId, btnId, btnText } = _otpPending;
+  const { email, btnId, btnText } = _otpPending;
   const errEl = document.getElementById('auth-error');
   const btn   = document.getElementById(btnId);
 
   loading(true);
   try {
-    const data = await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
+    // Verify OTP with real backend → creates account
+    const data = await api('POST', '/auth/verify-register', { email, otp: digits });
+
+    // Show success state
+    document.getElementById('otp-verify-btn').style.display = 'none';
+    document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = 'none');
+    document.getElementById('otp-verified-state').style.display = 'block';
+    clearInterval(_otpTimerInterval);
+
     TOKEN = data.token;
     CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
     loading(false);
+
+    await new Promise(r => setTimeout(r, 1200));
+
     document.getElementById('otp-overlay').classList.remove('open');
     _otpPending = null;
     if (btn) { btn.disabled = false; btn.textContent = btnText; }
@@ -1716,23 +1716,24 @@ async function doRegister(role) {
     }
   }
 
-  // Register directly via backend (backend handles duplicate check)
+  // Register via real backend — backend sends OTP
   const btn = document.getElementById(btnId);
   btn.disabled = true;
   btn.textContent = 'Sending verification code…';
 
- // Send OTP via real backend
-loading(true);
-try {
-  await api('POST', '/auth/login-otp', { email });
-  loading(false);
-  openOtp({ name, email, password, role, department, studentId, btnId, btnText });
-} catch(e) {
-  loading(false);
-  btn.disabled = false;
-  btn.textContent = btnText;
-  errEl.textContent = e.message;
-  errEl.classList.add('show');
+  loading(true);
+  try {
+    await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
+    loading(false);
+    openOtp({ name, email, password, role, department, studentId, btnId, btnText });
+    btn.textContent = 'Verify Email to Continue →';
+  } catch(e) {
+    loading(false);
+    btn.disabled = false;
+    btn.textContent = btnText;
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  }
 }
 
 function enterDashboard(user) {
