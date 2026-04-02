@@ -288,14 +288,14 @@
     <div class="otp-title">Verify your Email</div>
     <div class="otp-subtitle">
       We've sent a 6-digit code to<br>
-      <span class="otp-email-chip" id="otp-email-display">you@university.edu</span>
+      <span class="otp-email-chip" id="otp-email-display"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef96809aaf9a8186998a9d9c869b96c18a8b9a">[email&#160;protected]</a></span>
     </div>
     <div class="otp-inbox">
       <div class="otp-inbox-label">📥 Simulated Inbox — Demo Mode</div>
       <div class="otp-inbox-row">
         <div class="otp-inbox-avatar">🏫</div>
         <div>
-          <div class="otp-inbox-from">noreply@residenceos.edu · just now</div>
+          <div class="otp-inbox-from"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="80eeeff2e5f0ecf9c0f2e5f3e9e4e5eee3e5eff3aee5e4f5">[email&#160;protected]</a> · just now</div>
           <div class="otp-inbox-subject">Your ResidenceOS Verification Code</div>
         </div>
       </div>
@@ -927,7 +927,7 @@
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══════════════════════════════════════════════════════════════════
 //  IN-BROWSER DATABASE  (localStorage — no server needed)
 // ═══════════════════════════════════════════════════════════════════
@@ -1230,57 +1230,20 @@ function safeUser(u) {
 function parseToken(token) {
   try { return JSON.parse(atob(token)); } catch { return null; }
 }
-const BASE_URL = 'http://localhost:5000';
-async function api(method, path, body) {
-  await new Promise(r => setTimeout(r, 80)); // small delay for realism
-  const tokenData = CURRENT_USER ? { id: CURRENT_USER.id, role: CURRENT_USER.role } : parseToken(TOKEN);
-  const uid  = tokenData?.id;   
-  const role = tokenData?.role;
+const BASE_URL = 'http://localhost:5001';
 
-  // Parse query params
-  const [cleanPath, qs] = path.split('?');
-  const params = {};
-  if (qs) qs.split('&').forEach(p => { const [k,v]=p.split('='); params[k]=decodeURIComponent(v||''); });
-
-  // 1. Exact match e.g. GET /complaints
-  const key = method + ' ' + cleanPath;
-  if (simApi[key]) {
-    try { return simApi[key](body, uid, params, role); }
-    catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
-  }
-
-  const parts = cleanPath.split('/').filter(Boolean);
-  // parts for /complaints/1/assign  → ['complaints','1','assign']
-  // parts for /complaints/1         → ['complaints','1']
-
-  // 2. Sub-action route: /resource/:id/action  e.g. PUT /complaints/1/assign
-  if (parts.length === 3) {
-    const resource   = '/' + parts[0];
-    const resourceId = parseInt(parts[1]);
-    const action     = parts[2];
-    if (!isNaN(resourceId)) {
-      const subKey = method + ' ' + resource + '/:id/' + action;
-      if (simApi[subKey]) {
-        try { return simApi[subKey](body, uid, params, role, resourceId); }
-        catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
-      }
-    }
-  }
-
-  // 3. Dynamic :id route: /resource/:id  e.g. GET /complaints/1
-  if (parts.length === 2) {
-    const resource   = '/' + parts[0];
-    const resourceId = parseInt(parts[1]);
-    if (!isNaN(resourceId)) {
-      const dynamicKey = method + ' ' + resource + '/:id';
-      if (simApi[dynamicKey]) {
-        try { return simApi[dynamicKey](body, uid, params, role, resourceId); }
-        catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
-      }
-    }
-  }
-
-  throw new Error('Route not found: ' + key);
+async function api(method, path, body = null) {
+  const res = await fetch(BASE_URL + '/api' + path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': TOKEN ? `Bearer ${TOKEN}` : ''
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Something went wrong');
+  return data;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1385,7 +1348,15 @@ async function doLogin() {
   btn.disabled = true; btn.textContent = 'Signing in...'; loading(true);
 
   try {
-    const data = await api('POST', '/auth/login', { email, password });
+    const data = await api('POST', '/auth/login', { email, password, role: currentRole });
+
+    // Backend sends OTP — show OTP modal
+    if (data.otpSent !== undefined) {
+      btn.disabled = false; btn.textContent = 'Sign In →'; loading(false);
+      openLoginOtp(email, currentRole);
+      return;
+    }
+
     const actualRole   = data.user.role;
     const selectedRole = currentRole;
     const roleLabels   = { student: 'Student', admin: 'Admin', maintenance: 'Staff' };
@@ -1435,6 +1406,56 @@ async function doLogin() {
     loading(false);
     errEl.textContent = e.message;
     errEl.classList.add('show');
+  }
+}
+
+// ─── LOGIN OTP FLOW ───────────────────────────────────────────────────────────
+let _loginEmail = '';
+let _loginRole  = '';
+
+function openLoginOtp(email, role) {
+  _loginEmail = email;
+  _loginRole  = role;
+  document.getElementById('otp-email-display').textContent = email;
+  document.getElementById('otp-code-display').textContent  = '(sent to your email)';
+  ['otp-d1','otp-d2','otp-d3','otp-d4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.classList.remove('filled','error'); }
+  });
+  document.getElementById('otp-verified-state').style.display = 'none';
+  document.getElementById('otp-verify-btn').style.display     = '';
+  document.getElementById('otp-verify-btn').textContent       = 'Verify & Sign In →';
+  document.getElementById('otp-verify-btn').onclick           = verifyLoginOtp;
+  document.querySelectorAll('.otp-inputs,.otp-timer,.otp-resend').forEach(el => el.style.display = '');
+  _startOtpTimer(300);
+  document.getElementById('otp-overlay').classList.add('open');
+  setTimeout(() => { const d1 = document.getElementById('otp-d1'); if(d1) d1.focus(); }, 300);
+}
+
+async function verifyLoginOtp() {
+  const digits = ['otp-d1','otp-d2','otp-d3','otp-d4'].map(id => {
+    const el = document.getElementById(id); return el ? el.value : '';
+  }).join('');
+  if (digits.length < 4) { showToast('⚠️ Enter all 4 digits.'); return; }
+
+  loading(true);
+  try {
+    const data = await api('POST', '/auth/verify-otp', { email: _loginEmail, otp: digits });
+    TOKEN = data.token;
+    CURRENT_USER = data.user;
+    localStorage.setItem('ros_token', TOKEN);
+    localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
+    document.getElementById('otp-overlay').classList.remove('open');
+    loading(false);
+    showToast('🎉 Login successful!');
+    enterDashboard(CURRENT_USER);
+  } catch(e) {
+    loading(false);
+    ['otp-d1','otp-d2','otp-d3','otp-d4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.add('error'); setTimeout(() => el.classList.remove('error'), 400); }
+    });
+    showToast('❌ ' + e.message);
   }
 }
 
@@ -1659,7 +1680,7 @@ async function doRegister(role) {
       errEl.textContent = 'Admin registration code is required.';
       errEl.classList.add('show'); return;
     }
-    if (regCode !== DB.getObj('adminCode', 'ADMIN2024')) {
+    if (regCode !== 'ADMIN2024') {
       errEl.textContent = 'Invalid admin code. Get the current code from an existing admin.';
       errEl.classList.add('show'); return;
     }
@@ -1689,26 +1710,29 @@ async function doRegister(role) {
       errEl.textContent = 'Staff registration code is required.';
       errEl.classList.add('show'); return;
     }
-    if (regCode !== DB.getObj('staffCode', 'STAFF2024')) {
+    if (regCode !== 'STAFF2024') {
       errEl.textContent = 'Invalid staff code. Get the current code from the administrator.';
       errEl.classList.add('show'); return;
     }
   }
 
-  // Check email not already registered
-  const existingUsers = getUsers();
-  if (existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-    errEl.textContent = 'This email is already registered. Please sign in instead.';
-    errEl.classList.add('show'); return;
-  }
-
-  // Disable button and launch OTP flow
+  // Register directly via backend (backend handles duplicate check)
   const btn = document.getElementById(btnId);
   btn.disabled = true;
   btn.textContent = 'Sending verification code…';
 
+ // Send OTP via real backend
+loading(true);
+try {
+  await api('POST', '/auth/login-otp', { email });
+  loading(false);
   openOtp({ name, email, password, role, department, studentId, btnId, btnText });
-  btn.textContent = 'Verify Email to Continue →';
+} catch(e) {
+  loading(false);
+  btn.disabled = false;
+  btn.textContent = btnText;
+  errEl.textContent = e.message;
+  errEl.classList.add('show');
 }
 
 function enterDashboard(user) {
@@ -2461,29 +2485,23 @@ document.getElementById('complaint-modal').addEventListener('click', e => {
 });
 
 window.addEventListener('DOMContentLoaded', () => {
-  // Clear stale seed from previous broken version
-  const seedVer = DB.getObj('seedVersion', 0);
-  if (seedVer < 2) { localStorage.clear(); DB.setObj('seedVersion', 2); }
-  dbInit();
-
-  // Load landing page stats
-  try {
-    const d = simApi['GET /admin/dashboard']();
-    document.getElementById('lp-rooms').textContent    = d.stats.rooms.total_rooms;
-    document.getElementById('lp-occupied').textContent = d.stats.rooms.occupied;
-    document.getElementById('lp-issues').textContent   = d.stats.complaints.pending;
-  } catch(e) {}
-
-  // Auto re-login only if a valid saved session exists
-  if (TOKEN && CURRENT_USER) {
-    const stillExists = getUsers().find(u => u.id === CURRENT_USER.id);
-    if (stillExists) {
-      enterDashboard(CURRENT_USER);
-    } else {
-      doLogout();
+  // Load landing page stats from real backend
+  fetch('http://localhost:5001/api/admin/dashboard', {
+    headers: { 'Authorization': TOKEN ? `Bearer ${TOKEN}` : '' }
+  }).then(r => r.json()).then(d => {
+    if (d.stats) {
+      document.getElementById('lp-rooms').textContent    = d.stats.rooms.total_rooms;
+      document.getElementById('lp-occupied').textContent = d.stats.rooms.occupied;
+      document.getElementById('lp-issues').textContent   = d.stats.complaints.pending;
     }
-  }
-});
+  }).catch(() => {
+    // Backend not reachable — leave defaults
+  });
+
+  // Auto-login if token exists
+  if (TOKEN && CURRENT_USER) {
+    enterDashboard(CURRENT_USER);
+  }});
 </script>
 </body>
 </html>
