@@ -11,8 +11,9 @@ const router = express.Router();
 // In-memory store for pending registrations
 const pendingRegistrations = {};
 
+// Generate 6 digit OTP
 function generateOTP() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // ── POST /api/auth/register ───────────────────────────────────────────────────
@@ -31,12 +32,13 @@ router.post('/register', async (req, res) => {
     if (exists)
       return res.status(409).json({ error: 'An account with this email already exists.' });
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const otp            = generateOTP();
-    const expiresAt      = Date.now() + 5 * 60 * 1000;
+    // Store plain password in pending — hash only when saving to DB
+    const otp       = generateOTP();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
     pendingRegistrations[email] = {
-      name, email, hashedPassword,
+      name, email,
+      plainPassword: password,   // store plain, hash at save time
       role: role || 'student',
       student_id: student_id || null,
       department: department || null,
@@ -50,6 +52,7 @@ router.post('/register', async (req, res) => {
       res.json({ message: 'OTP sent to your email. Please verify to complete registration.', otpSent: true });
     } catch (err) {
       console.error('❌ Email failed:', err.message);
+      // Show OTP in terminal and response for testing
       res.json({ message: 'OTP generated (email failed, check terminal).', otpSent: false, otp });
     }
   } catch (err) {
@@ -79,10 +82,13 @@ router.post('/verify-register', async (req, res) => {
     if (pending.otp !== otp.toString())
       return res.status(400).json({ error: 'Incorrect OTP. Please try again.' });
 
+    // Hash password HERE at save time — only once
+    const hashedPassword = bcrypt.hashSync(pending.plainPassword, 10);
+
     const [result] = await pool.query(
       `INSERT INTO users (name, email, password, role, student_id, department, phone)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [pending.name, pending.email, pending.hashedPassword,
+      [pending.name, pending.email, hashedPassword,
        pending.role, pending.student_id, pending.department, pending.phone]
     );
 

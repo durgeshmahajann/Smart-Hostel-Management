@@ -288,19 +288,20 @@
     <div class="otp-title">Verify your Email</div>
     <div class="otp-subtitle">
       We've sent a 6-digit code to<br>
-      <span class="otp-email-chip" id="otp-email-display"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ef96809aaf9a8186998a9d9c869b96c18a8b9a">[email&#160;protected]</a></span>
+      <span class="otp-email-chip" id="otp-email-display"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0a73657f4a7f64637c6f7879637e73246f6e7f">[email&#160;protected]</a></span>
     </div>
     <div class="otp-inbox">
-      <div class="otp-inbox-label">📧 Check your inbox</div>
+      <div class="otp-inbox-label">📥 Simulated Inbox — Demo Mode</div>
       <div class="otp-inbox-row">
         <div class="otp-inbox-avatar">🏫</div>
         <div>
-          <div class="otp-inbox-from">noreply@residenceos.com · just now</div>
+          <div class="otp-inbox-from"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="cea0a1bcabbea2b78ebcabbda7aaaba0adaba1bde0abaabb">[email&#160;protected]</a> · just now</div>
           <div class="otp-inbox-subject">Your ResidenceOS Verification Code</div>
         </div>
       </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.6">
-        A 6-digit OTP has been sent to your email. Please check your inbox (and spam folder).
+      <div class="otp-code-reveal">
+        <div class="otp-code-digits" id="otp-code-display">——————</div>
+        <button class="otp-copy-btn" onclick="otpCopyCode()">Copy</button>
       </div>
     </div>
     <div class="otp-inputs">
@@ -1229,20 +1230,57 @@ function safeUser(u) {
 function parseToken(token) {
   try { return JSON.parse(atob(token)); } catch { return null; }
 }
-const BASE_URL = 'http://localhost:5001';
+const BASE_URL = 'http://localhost:5000';
+async function api(method, path, body) {
+  await new Promise(r => setTimeout(r, 80)); // small delay for realism
+  const tokenData = CURRENT_USER ? { id: CURRENT_USER.id, role: CURRENT_USER.role } : parseToken(TOKEN);
+  const uid  = tokenData?.id;   
+  const role = tokenData?.role;
 
-async function api(method, path, body = null) {
-  const res = await fetch(BASE_URL + '/api' + path, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': TOKEN ? `Bearer ${TOKEN}` : ''
-    },
-    body: body ? JSON.stringify(body) : null
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Something went wrong');
-  return data;
+  // Parse query params
+  const [cleanPath, qs] = path.split('?');
+  const params = {};
+  if (qs) qs.split('&').forEach(p => { const [k,v]=p.split('='); params[k]=decodeURIComponent(v||''); });
+
+  // 1. Exact match e.g. GET /complaints
+  const key = method + ' ' + cleanPath;
+  if (simApi[key]) {
+    try { return simApi[key](body, uid, params, role); }
+    catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
+  }
+
+  const parts = cleanPath.split('/').filter(Boolean);
+  // parts for /complaints/1/assign  → ['complaints','1','assign']
+  // parts for /complaints/1         → ['complaints','1']
+
+  // 2. Sub-action route: /resource/:id/action  e.g. PUT /complaints/1/assign
+  if (parts.length === 3) {
+    const resource   = '/' + parts[0];
+    const resourceId = parseInt(parts[1]);
+    const action     = parts[2];
+    if (!isNaN(resourceId)) {
+      const subKey = method + ' ' + resource + '/:id/' + action;
+      if (simApi[subKey]) {
+        try { return simApi[subKey](body, uid, params, role, resourceId); }
+        catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
+      }
+    }
+  }
+
+  // 3. Dynamic :id route: /resource/:id  e.g. GET /complaints/1
+  if (parts.length === 2) {
+    const resource   = '/' + parts[0];
+    const resourceId = parseInt(parts[1]);
+    if (!isNaN(resourceId)) {
+      const dynamicKey = method + ' ' + resource + '/:id';
+      if (simApi[dynamicKey]) {
+        try { return simApi[dynamicKey](body, uid, params, role, resourceId); }
+        catch(e) { throw new Error(typeof e==='string' ? e : e.message || 'Error'); }
+      }
+    }
+  }
+
+  throw new Error('Route not found: ' + key);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1416,7 +1454,6 @@ function openLoginOtp(email, role) {
   _loginEmail = email;
   _loginRole  = role;
   document.getElementById('otp-email-display').textContent = email;
-  document.getElementById('otp-code-display').textContent  = '(sent to your email)';
   ['otp-d1','otp-d2','otp-d3','otp-d4'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('filled','error'); }
@@ -1435,7 +1472,7 @@ async function verifyLoginOtp() {
   const digits = ['otp-d1','otp-d2','otp-d3','otp-d4'].map(id => {
     const el = document.getElementById(id); return el ? el.value : '';
   }).join('');
-  if (digits.length < 4) { showToast('⚠️ Enter all 4 digits.'); return; }
+  if (digits.length < 4) { showToast('\u26a0\ufe0f Enter all 4 digits.'); return; }
 
   loading(true);
   try {
@@ -1446,7 +1483,7 @@ async function verifyLoginOtp() {
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
     document.getElementById('otp-overlay').classList.remove('open');
     loading(false);
-    showToast('🎉 Login successful!');
+    showToast('\U0001f389 Login successful!');
     enterDashboard(CURRENT_USER);
   } catch(e) {
     loading(false);
@@ -1454,7 +1491,7 @@ async function verifyLoginOtp() {
       const el = document.getElementById(id);
       if (el) { el.classList.add('error'); setTimeout(() => el.classList.remove('error'), 400); }
     });
-    showToast('❌ ' + e.message);
+    showToast('\u274c ' + e.message);
   }
 }
 
@@ -1478,6 +1515,7 @@ function openOtp(pendingData) {
 
   // Update modal UI
   document.getElementById('otp-email-display').textContent = pendingData.email;
+  document.getElementById('otp-code-display').textContent = _otpCode;
 
   // Reset digit inputs
   ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
@@ -1557,23 +1595,14 @@ function otpCopyCode() {
   navigator.clipboard.writeText(_otpCode).then(() => showToast('✅ OTP code copied!')).catch(() => showToast('Code: ' + _otpCode));
 }
 
-async function otpResend() {
-  if (!_otpPending) return;
-  const { email } = _otpPending;
-
-  try {
-    await api('POST', '/auth/resend-otp', { email, type: 'register' });
-    showToast('📧 New OTP sent to your email!');
-  } catch(e) {
-    showToast('❌ Could not resend OTP: ' + e.message);
-    return;
-  }
-
+function otpResend() {
+  _otpCode = _generateOtp();
+  document.getElementById('otp-code-display').textContent = _otpCode;
   // Reset timer
   document.getElementById('otp-timer-count').style.color = '';
   document.getElementById('otp-verify-btn').disabled = false;
   document.getElementById('otp-verify-btn').textContent = 'Verify & Create Account →';
-  _startOtpTimer(300);
+  _startOtpTimer(600);
   // Lock resend again for 30s
   const resendLink = document.getElementById('otp-resend-link');
   resendLink.classList.add('disabled');
@@ -1584,6 +1613,7 @@ async function otpResend() {
     const el = document.getElementById(id);
     el.value = ''; el.classList.remove('filled','error');
   });
+  showToast('📧 New code generated!');
   document.getElementById('otp-d1').focus();
 }
 
@@ -1591,29 +1621,36 @@ async function otpVerify() {
   const digits = ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].map(id => document.getElementById(id).value).join('');
   if (digits.length < 6) { showToast('⚠️ Enter all 6 digits.'); return; }
 
-  const { email, btnId, btnText } = _otpPending;
+  if (digits !== _otpCode) {
+    ['otp-d1','otp-d2','otp-d3','otp-d4','otp-d5','otp-d6'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('error');
+      setTimeout(() => el.classList.remove('error'), 400);
+    });
+    showToast('❌ Incorrect code. Please try again.');
+    return;
+  }
+
+  // Code matched — show success, then create account
+  document.getElementById('otp-verify-btn').style.display = 'none';
+  document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = 'none');
+  document.getElementById('otp-verified-state').style.display = 'block';
+  clearInterval(_otpTimerInterval);
+
+  await new Promise(r => setTimeout(r, 1200));
+
+  const { name, email, password, role, department, studentId, btnId, btnText } = _otpPending;
   const errEl = document.getElementById('auth-error');
   const btn   = document.getElementById(btnId);
 
   loading(true);
   try {
-    // Verify OTP with real backend → creates account
-    const data = await api('POST', '/auth/verify-register', { email, otp: digits });
-
-    // Show success state
-    document.getElementById('otp-verify-btn').style.display = 'none';
-    document.querySelectorAll('.otp-inputs, .otp-timer, .otp-resend').forEach(el => el.style.display = 'none');
-    document.getElementById('otp-verified-state').style.display = 'block';
-    clearInterval(_otpTimerInterval);
-
+    const data = await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
     TOKEN = data.token;
     CURRENT_USER = data.user;
     localStorage.setItem('ros_token', TOKEN);
     localStorage.setItem('ros_user', JSON.stringify(CURRENT_USER));
     loading(false);
-
-    await new Promise(r => setTimeout(r, 1200));
-
     document.getElementById('otp-overlay').classList.remove('open');
     _otpPending = null;
     if (btn) { btn.disabled = false; btn.textContent = btnText; }
@@ -1715,24 +1752,20 @@ async function doRegister(role) {
     }
   }
 
-  // Register via real backend — backend sends OTP
+  // Check email not already registered
+  const existingUsers = getUsers();
+  if (existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+    errEl.textContent = 'This email is already registered. Please sign in instead.';
+    errEl.classList.add('show'); return;
+  }
+
+  // Disable button and launch OTP flow
   const btn = document.getElementById(btnId);
   btn.disabled = true;
   btn.textContent = 'Sending verification code…';
 
-  loading(true);
-  try {
-    await api('POST', '/auth/register', { name, email, password, role, department, student_id: studentId });
-    loading(false);
-    openOtp({ name, email, password, role, department, studentId, btnId, btnText });
-    btn.textContent = 'Verify Email to Continue →';
-  } catch(e) {
-    loading(false);
-    btn.disabled = false;
-    btn.textContent = btnText;
-    errEl.textContent = e.message;
-    errEl.classList.add('show');
-  }
+  openOtp({ name, email, password, role, department, studentId, btnId, btnText });
+  btn.textContent = 'Verify Email to Continue →';
 }
 
 function enterDashboard(user) {
@@ -2494,14 +2527,13 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('lp-occupied').textContent = d.stats.rooms.occupied;
       document.getElementById('lp-issues').textContent   = d.stats.complaints.pending;
     }
-  }).catch(() => {
-    // Backend not reachable — leave defaults
-  });
+  }).catch(() => {});
 
   // Auto-login if token exists
   if (TOKEN && CURRENT_USER) {
     enterDashboard(CURRENT_USER);
-  }});
+  }
+});
 </script>
 </body>
 </html>
